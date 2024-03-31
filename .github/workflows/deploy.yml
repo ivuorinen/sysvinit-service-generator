@@ -11,12 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: Build-Deploy-Vue
-        uses: xRealNeon/VuePagesAction@1.0.1
+        uses: Daniele-Tentoni/VuePagesAction@1.0.8
         with:
           username: 'ivuorinen'
           reponame: 'sysvinit-service-generator'
           token: ${{ secrets.GITHUB_TOKEN }} # no need to change this line this is used to create the branch in your application repository
-          basebranchname: main
           gitemail: 'ivuorinen@users.noreply.github.com'
           gitname: 'ivuorinen'
           gitmsg: 'Deploy Vue App 🚀'
