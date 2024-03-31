@@ -1,0 +1,22 @@
+---
+name: Build and Deploy Vue Application to Github Pages
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build_deploy_vue:
+    runs-on: ubuntu-latest
+    name: Build and Deploy Vue
+    steps:
+      - uses: actions/checkout@v2
+      - id: Build-Deploy-Vue
+        uses: thefrustrateddev/vue-deploy-github-pages@v1.0.0
+        with:
+          username: 'ivuorinen'
+          reponame: 'sysvinit-service-generator'
+          token: ${{ secrets.GITHUB_TOKEN }} # no need to change this line this is used to create the branch in your application repository
+          basebranchname: 'main'
+          email: 'ivuorinen@users.noreply.github.com'
+          name: 'ivuorinen'
+          commitmessage: 'Deploy Vue App 🚀'
