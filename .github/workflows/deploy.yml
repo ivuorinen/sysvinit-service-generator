@@ -16,7 +16,7 @@ jobs:
           username: 'ivuorinen'
           reponame: 'sysvinit-service-generator'
           token: ${{ secrets.GITHUB_TOKEN }} # no need to change this line this is used to create the branch in your application repository
-          basebranchname: 'main'
+          basebranchname: main
           email: 'ivuorinen@users.noreply.github.com'
           name: 'ivuorinen'
           commitmessage: 'Deploy Vue App 🚀'
