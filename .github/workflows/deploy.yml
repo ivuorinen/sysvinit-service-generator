@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Vue
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: Build-Deploy-Vue
-        uses: Daniele-Tentoni/VuePagesAction@1.0.8
+        uses: Daniele-Tentoni/VuePagesAction@v1.0.8
         with:
           username: 'ivuorinen'
           reponame: 'sysvinit-service-generator'
