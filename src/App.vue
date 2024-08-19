@@ -5,10 +5,12 @@ let service = defineModel('service', { default: 'my-service' })
 let description = defineModel('description', { default: 'This command does something' })
 let username = defineModel('username', { default: 'root' })
 let command = defineModel('command', { default: '/usr/local/bin/command' })
-let servicePath = ref('/etc/init.d/' + service.value )
+let servicePath = ref('/etc/init.d/' + service.value)
 let logRotatePath = ref('/etc/logrotate.d/' + service.value)
 
-let shellCommands = ref(`sudo chmod +x ${servicePath.value} && sudo update-rc.d ${service.value} defaults`)
+let shellCommands = ref(
+  `sudo chmod +x ${servicePath.value} && sudo update-rc.d ${service.value} defaults`
+)
 
 let serviceTemplateString = `#!/usr/bin/env sh
 ### BEGIN INIT INFO
@@ -127,18 +129,20 @@ let serviceTemplate = serviceTemplateString
 
 let logRotate = logRotateString.replace(/<NAME>/g, service.value)
 
-watch([service, description, username, command], ([newService, newDescription, newUsername, newCommand]) => {
-  serviceTemplate = serviceTemplateString
-    .replace(/<NAME>/g, newService)
-    .replace(/<DESCRIPTION>/g, newDescription)
-    .replace(/<USERNAME>/g, newUsername)
-    .replace(/<COMMAND>/g, newCommand)
-  servicePath.value = '/etc/init.d/' + newService
-  logRotate = logRotateString.replace(/<NAME>/g, newService)
-  logRotatePath.value = '/etc/logrotate.d/' + newService
-  shellCommands.value = `sudo chmod +x ${servicePath.value} && sudo update-rc.d ${newService} defaults`
-})
-
+watch(
+  [service, description, username, command],
+  ([newService, newDescription, newUsername, newCommand]) => {
+    serviceTemplate = serviceTemplateString
+      .replace(/<NAME>/g, newService)
+      .replace(/<DESCRIPTION>/g, newDescription)
+      .replace(/<USERNAME>/g, newUsername)
+      .replace(/<COMMAND>/g, newCommand)
+    servicePath.value = '/etc/init.d/' + newService
+    logRotate = logRotateString.replace(/<NAME>/g, newService)
+    logRotatePath.value = '/etc/logrotate.d/' + newService
+    shellCommands.value = `sudo chmod +x ${servicePath.value} && sudo update-rc.d ${newService} defaults`
+  }
+)
 </script>
 
 <template>
@@ -168,11 +172,15 @@ watch([service, description, username, command], ([newService, newDescription, n
 
   <main>
     <h3>Generated service script:</h3>
-    <div>Path: <code>{{ servicePath }}</code></div>
+    <div>
+      Path: <code>{{ servicePath }}</code>
+    </div>
     <textarea style="height: 400px" v-text="serviceTemplate"></textarea>
     <details>
       <summary>Logrotate</summary>
-      <div>Path: <code>{{ logRotatePath }}</code></div>
+      <div>
+        Path: <code>{{ logRotatePath }}</code>
+      </div>
       <textarea class="just-right noresize" v-text="logRotate"></textarea>
     </details>
     <details>
