@@ -65,6 +65,7 @@ jobs:
         uses: github/super-linter@v6
         env:
           VALIDATE_ALL_CODEBASE: false
+          FIX_JAVASCRIPT_STANDARD: true
           # Change to 'master' if your main branch differs
           DEFAULT_BRANCH: ${{ env.MAIN_BRANCH }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
