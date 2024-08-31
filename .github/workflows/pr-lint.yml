@@ -19,10 +19,11 @@ env:
 #############################
 on:
   push:
-    branches-ignore: [master, main]
-    # Remove the line above to run when pushing to master
+    branches: [master, main]
   pull_request:
     branches: [master, main]
+
+permissions: read-all
 
 ###############
 # Set the Job #
@@ -60,9 +61,11 @@ jobs:
       # Run Linter against code base #
       ################################
       - name: Lint Code Base
-        uses: github/super-linter@v5
+        uses: github/super-linter@v6
         env:
           VALIDATE_ALL_CODEBASE: false
+          FIX_JAVASCRIPT_STANDARD: true
+          VALIDATE_TYPESCRIPT_STANDARD: false
           # Change to 'master' if your main branch differs
           DEFAULT_BRANCH: ${{ env.MAIN_BRANCH }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

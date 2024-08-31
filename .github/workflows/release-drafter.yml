@@ -5,6 +5,8 @@ name: Release Drafter
 on:
   workflow_call:
 
+permissions: read-all
+
 jobs:
   update_release_draft:
     name: ✏️ Draft release
