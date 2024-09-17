@@ -173,13 +173,13 @@ watch(
   <main>
     <h3>Generated service script:</h3>
     <div>
-      Path: <code>{{ servicePath }}</code>
+      Save as: <code>{{ servicePath }}</code>
     </div>
     <textarea style="height: 400px" v-text="serviceTemplate"></textarea>
     <details>
       <summary>Logrotate</summary>
       <div>
-        Path: <code>{{ logRotatePath }}</code>
+        Save as: <code>{{ logRotatePath }}</code>
       </div>
       <textarea class="just-right noresize" v-text="logRotate"></textarea>
     </details>
