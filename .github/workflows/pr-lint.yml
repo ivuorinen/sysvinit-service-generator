@@ -57,6 +57,22 @@ jobs:
           # list of changed files within `super-linter`
           fetch-depth: 0
 
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Cache Node Modules
+        uses: actions/cache@v4
+        id: cache
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm install
+
       ################################
       # Run Linter against code base #
       ################################
@@ -66,6 +82,5 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           FIX_JAVASCRIPT_STANDARD: true
           VALIDATE_TYPESCRIPT_STANDARD: false
-          # Change to 'master' if your main branch differs
           DEFAULT_BRANCH: ${{ env.MAIN_BRANCH }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
