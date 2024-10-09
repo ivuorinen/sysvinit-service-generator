@@ -121,13 +121,13 @@ const logRotateString = `/var/log/<NAME>.log {
     delaycompress
 }`
 
-const serviceTemplate = serviceTemplateString
+let serviceTemplate = serviceTemplateString
   .replace(/<NAME>/g, service.value)
   .replace(/<DESCRIPTION>/g, description.value)
   .replace(/<USERNAME>/g, username.value)
   .replace(/<COMMAND>/g, command.value)
 
-const logRotate = logRotateString.replace(/<NAME>/g, service.value)
+let logRotate = logRotateString.replace(/<NAME>/g, service.value)
 
 watch(
   [service, description, username, command],
