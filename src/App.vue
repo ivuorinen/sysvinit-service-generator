@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-let service = defineModel('service', { default: 'my-service' })
-let description = defineModel('description', { default: 'This command does something' })
-let username = defineModel('username', { default: 'root' })
-let command = defineModel('command', { default: '/usr/local/bin/command' })
-let servicePath = ref('/etc/init.d/' + service.value)
-let logRotatePath = ref('/etc/logrotate.d/' + service.value)
+const service = defineModel('service', { default: 'my-service' })
+const description = defineModel('description', { default: 'This command does something' })
+const username = defineModel('username', { default: 'root' })
+const command = defineModel('command', { default: '/usr/local/bin/command' })
+const servicePath = ref('/etc/init.d/' + service.value)
+const logRotatePath = ref('/etc/logrotate.d/' + service.value)
 
-let shellCommands = ref(
+const shellCommands = ref(
   `sudo chmod +x ${servicePath.value} && sudo update-rc.d ${service.value} defaults`
 )
 
-let serviceTemplateString = `#!/usr/bin/env sh
+const serviceTemplateString = `#!/usr/bin/env sh
 ### BEGIN INIT INFO
 # Provides:          <NAME>
 # Required-Start:    $local_fs $network $named $time $syslog
@@ -112,7 +112,7 @@ case "$1" in
 esac
 `
 
-let logRotateString = `/var/log/<NAME>.log {
+const logRotateString = `/var/log/<NAME>.log {
     rotate 4
     weekly
     missingok
@@ -121,13 +121,13 @@ let logRotateString = `/var/log/<NAME>.log {
     delaycompress
 }`
 
-let serviceTemplate = serviceTemplateString
+const serviceTemplate = serviceTemplateString
   .replace(/<NAME>/g, service.value)
   .replace(/<DESCRIPTION>/g, description.value)
   .replace(/<USERNAME>/g, username.value)
   .replace(/<COMMAND>/g, command.value)
 
-let logRotate = logRotateString.replace(/<NAME>/g, service.value)
+const logRotate = logRotateString.replace(/<NAME>/g, service.value)
 
 watch(
   [service, description, username, command],
