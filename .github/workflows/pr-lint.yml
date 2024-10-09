@@ -13,6 +13,8 @@ permissions: read-all
 
 jobs:
   build:
+    permissions:
+      statuses: write
     # https://github.com/ivuorinen/ivuorinen/.github/workflows/pr-lint.yml
     uses: ivuorinen/ivuorinen/.github/workflows/pr-lint.yml@main
 
