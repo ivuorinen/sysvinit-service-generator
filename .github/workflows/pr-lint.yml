@@ -12,10 +12,10 @@ on:
 permissions: read-all
 
 jobs:
-  build:
+  lint:
     permissions:
       statuses: write
       contents: read
       packages: read
-    # https://github.com/ivuorinen/ivuorinen/.github/workflows/pr-lint.yml
-    uses: ivuorinen/ivuorinen/.github/workflows/pr-lint.yml@main
+    # https://github.com/ivuorinen/actions
+    uses: ivuorinen/actions/pr-lint@main
