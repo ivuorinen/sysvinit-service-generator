@@ -1,4 +1,5 @@
 ---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Lint Code Base
 
 env:
@@ -13,9 +14,13 @@ permissions: read-all
 
 jobs:
   lint:
+    runs-on: ubuntu-latest
+
     permissions:
       statuses: write
       contents: read
       packages: read
-    # https://github.com/ivuorinen/actions
-    uses: ivuorinen/actions/pr-lint@main
+
+    steps:
+      # https://github.com/ivuorinen/actions
+      uses: ivuorinen/actions/pr-lint@main
