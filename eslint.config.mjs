@@ -1,7 +1,7 @@
 import pluginVue from 'eslint-plugin-vue'
 import {
   defineConfigWithVueTs,
-  vueTsConfigs,
+  vueTsConfigs
 } from '@vue/eslint-config-typescript'
 import { includeIgnoreFile } from '@eslint/compat'
 import path from 'node:path'
@@ -17,11 +17,18 @@ export default defineConfigWithVueTs([
     // your overrides
   },
   ...pluginVue.configs['flat/essential'],
-  vueTsConfigs.recommended,
+  vueTsConfigs.recommendedTypeChecked,
   {
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'script'
+      sourceType: 'script',
+      parserOptions: {
+        project: [
+          './tsconfig.json',
+          './tsconfig.node.json',
+          './tsconfig.eslint.json'
+        ]
+      }
     }
   }
 ])
