@@ -23,4 +23,4 @@ jobs:
 
     steps:
       # https://github.com/ivuorinen/actions
-      - uses: ivuorinen/actions/pr-lint@d648dba57309a3437c6f7996fdacb478c5a99916 # 25.3.25
+      - uses: ivuorinen/actions/pr-lint@312c00f77fbd73948441c8b004607e098e40c97f # 25.4.8
