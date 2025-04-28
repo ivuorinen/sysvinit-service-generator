@@ -1,0 +1,5 @@
+# MegaLinter config
+# Merged with workflow settings
+
+DISABLE_LINTERS:
+  - REPOSITORY_GRYPE
