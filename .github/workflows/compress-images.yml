@@ -1,11 +1,9 @@
 ---
-# Compress images on demand (workflow_dispatch), and at 11pm every Sunday (schedule).
+# Compress images on demand (workflow_dispatch).
 # Open a Pull Request if any images can be compressed.
 name: Compress Images on Demand
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '00 23 * * 0'
 
 permissions: read-all
 
@@ -29,7 +27,7 @@ jobs:
         if: steps.calibre.outputs.markdown != ''
         uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # v7
         with:
-          title: Compressed Images Nightly
+          title: Compressed Images
           branch-suffix: timestamp
           commit-message: Compressed Images
           body: ${{ steps.calibre.outputs.markdown }}
