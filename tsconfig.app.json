@@ -18,5 +18,8 @@
         "./src/*"
       ]
     }
+  },
+  "vueCompilerOptions": {
+    "plugins": ["@vue/typescript-plugin"]
   }
 }
