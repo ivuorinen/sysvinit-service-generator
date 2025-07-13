@@ -28,3 +28,8 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Yarn
+.yarn/
+yarn.lock
+.pnp.*
