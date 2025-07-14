@@ -10,8 +10,8 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix",
-    "type-lint": "ts-standard",
-    "type-fix": "ts-standard --fix",
+    "type-lint": "vue-tsc --noEmit -p tsconfig.lint.json",
+    "type-fix": "ts-standard --fix --project tsconfig.lint.json",
     "format": "prettier --write src/ index.html .github/ .vscode/"
   },
   "dependencies": {

@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "env.d.ts",
+    "src/**/*",
+    "src/**/*.vue",
+    "eslint.config.mjs",
+    "vite.config.ts"
+  ],
+  "compilerOptions": {
+    "strict": true,
+    "strictNullChecks": true
+  }
+}

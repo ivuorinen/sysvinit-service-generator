@@ -21,6 +21,10 @@ Install dependencies and run the dev server with Yarn:
 yarn install
 yarn dev
 
+# check code before committing
+yarn lint
+yarn type-lint
+
 # build the app
 yarn build
 ```
