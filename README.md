@@ -13,6 +13,22 @@ This Vue 3 app generates templates for sysvinit services.
 7. ???
 8. Profit!
 
+## Development
+
+Install dependencies and run the dev server with Yarn:
+
+```bash
+yarn install
+yarn dev
+
+# check code before committing
+yarn lint
+yarn type-lint
+
+# build the app
+yarn build
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

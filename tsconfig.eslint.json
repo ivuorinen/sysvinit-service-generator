@@ -1,5 +1,4 @@
 {
-  "extends": "./tsconfig.node.json",
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
@@ -10,5 +9,16 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["es2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  }
 }
