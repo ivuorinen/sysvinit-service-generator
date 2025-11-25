@@ -1,25 +1,34 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Lint Code Base
+name: PR Lint
 
-env:
-  MAIN_BRANCH: main
 on:
-  push:
-    branches: [master, main]
   pull_request:
     branches: [master, main]
 
-permissions: read-all
+env: # Comment env block if you don't want to apply fixes
+  # Apply linter fixes configuration
+  APPLY_FIXES: all
+  APPLY_FIXES_EVENT: all
+  APPLY_FIXES_MODE: commit
+  SARIF_REPORTER: true
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
   lint:
     runs-on: ubuntu-latest
 
     permissions:
-      statuses: write
-      contents: read
+      contents: write
+      issues: write
       packages: read
+      pull-requests: write
+      security-events: write
+      statuses: write
 
     steps:
       # https://github.com/ivuorinen/actions
