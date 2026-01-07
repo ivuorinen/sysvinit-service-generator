@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [master, main]
 
+permissions: {}
+
 env: # Comment env block if you don't want to apply fixes
   # Apply linter fixes configuration
   APPLY_FIXES: all
