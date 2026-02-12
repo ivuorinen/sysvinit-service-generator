@@ -20,7 +20,7 @@
   "devDependencies": {
     "@eslint/compat": "^2.0.0",
     "@eslint/eslintrc": "^3.1.0",
-    "@eslint/js": "^9.12.0",
+    "@eslint/js": "^10.0.0",
     "@tsconfig/node24": "^24.0.0",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
@@ -28,7 +28,7 @@
     "@vue/eslint-config-typescript": "^14",
     "@vue/tsconfig": "^0.8.0",
     "@vue/typescript-plugin": "^3.0.1",
-    "eslint": "^9",
+    "eslint": "^10.0.0",
     "eslint-plugin-vue": "^10",
     "npm-run-all2": "^8.0.0",
     "prettier": "^3.0.3",
