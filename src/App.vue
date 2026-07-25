@@ -21,8 +21,10 @@ const options = computed(() => ({
 
 const servicePath = computed(() => '/etc/init.d/' + service.value)
 const logRotatePath = computed(() => '/etc/logrotate.d/' + service.value)
-const serviceTemplate = computed(() => generateService(options.value))
-const logRotate = computed(() => generateLogRotate(options.value))
+// The generators reject invalid options rather than emit a broken script, so
+// guard on validity here instead of relying on the template's v-else branch.
+const serviceTemplate = computed(() => (valid.value ? generateService(options.value) : ''))
+const logRotate = computed(() => (valid.value ? generateLogRotate(options.value) : ''))
 const shellCommands = computed(
   () => `sudo chmod +x ${servicePath.value} && sudo update-rc.d ${service.value} defaults`
 )

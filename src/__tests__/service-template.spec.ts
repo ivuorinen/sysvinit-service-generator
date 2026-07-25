@@ -32,7 +32,25 @@ const asFile = (script: string): string => {
   return path
 }
 
-const has = (bin: string): boolean => spawnSync('sh', ['-c', `command -v ${bin}`]).status === 0
+const isPresent = (bin: string): boolean =>
+  spawnSync('sh', ['-c', `command -v ${bin}`]).status === 0
+
+const CI = process.env.CI === 'true' || process.env.CI === '1'
+
+/**
+ * Decide whether a shell-validator test runs.
+ *
+ * In CI it always runs, so a missing validator fails the suite rather than
+ * quietly reducing coverage — a skipped test still yields a green `npm test`,
+ * which would make the guarantee in AGENTS.md untrue. Locally it is skipped
+ * with a warning so contributors without the binaries are not blocked.
+ */
+const validatorRuns = (bin: string): boolean => {
+  if (CI) return true
+  if (isPresent(bin)) return true
+  console.warn(`[skipped] ${bin} not found - generated-script validation is INCOMPLETE`)
+  return false
+}
 
 describe('shell quoting', () => {
   it('wraps values in single quotes', () => {
@@ -116,11 +134,41 @@ describe('generated service script', () => {
     expect(script).toContain(`SCRIPT='/usr/bin/node /srv/app.js --opt="x y"'`)
   })
 
-  it('renders an injection attempt inert', () => {
-    const script = generateService(opts({ service: 'x; touch /tmp/PWNED #' }))
-    expect(script).toContain(`NAME='x; touch /tmp/PWNED #'`)
-    // The payload must never reach an executable position.
-    expect(script).not.toMatch(/^PIDFILE=\/run\/x; touch/m)
+  it('sets a non-zero exit status for an unknown action', () => {
+    // LSB reserves 2 for invalid or excess arguments; exiting 0 would hide
+    // usage errors from callers and monitoring.
+    expect(generateService(opts())).toMatch(/echo "Usage: \$0 [^"]+"\n\s+#[^\n]*\n\s+exit 2\nesac/)
+  })
+})
+
+describe('generator boundary validation', () => {
+  // The generators are the trust boundary, not App.vue: a direct caller must not
+  // be able to reach the unquotable <NAME> contexts (LSB comment, logrotate
+  // stanza path) with arbitrary input.
+  const bad = ['x; touch /tmp/PWNED #', 'my app', 'a/b', '$(id)', 'a`b', '']
+
+  it.each(bad)('generateService rejects service name %j', (service: string) => {
+    expect(() => generateService(opts({ service }))).toThrow(/Invalid service name/)
+  })
+
+  it.each(bad)('generateLogRotate rejects service name %j', (service: string) => {
+    expect(() => generateLogRotate(opts({ service }))).toThrow(/Invalid service name/)
+  })
+
+  it.each(bad)('generateService rejects username %j', (username: string) => {
+    expect(() => generateService(opts({ username }))).toThrow(/Invalid username/)
+  })
+
+  it.each(['', '   '])('generateService rejects empty command %j', (command: string) => {
+    expect(() => generateService(opts({ command }))).toThrow(/Command cannot be empty/)
+  })
+
+  it('accepts a description containing shell metacharacters and newlines', () => {
+    // Only the name and username are charset-restricted; the description is a
+    // free-text comment, sanitised rather than rejected.
+    expect(() =>
+      generateService(opts({ description: '$(id); rm -rf /\nsecond line' }))
+    ).not.toThrow()
   })
 })
 
@@ -131,8 +179,7 @@ describe('generated logrotate config', () => {
 })
 
 // These are the checks that would have caught the $NAME, &> and non-POSIX
-// defects on first run. Skipped rather than silently passing when the binary is
-// absent, so a missing tool never reads as a clean result.
+// defects on first run. Mandatory in CI (see validatorRuns).
 describe('shell validation of the generated script', () => {
   const cases: ServiceOptions[] = [
     opts(),
@@ -141,7 +188,8 @@ describe('shell validation of the generated script', () => {
     opts({ description: 'Line one\n# hijacked' })
   ]
 
-  it.runIf(has('dash'))('parses under dash', () => {
+  it.runIf(validatorRuns('dash'))('parses under dash', () => {
+    expect(isPresent('dash'), 'dash is required to validate the generated script').toBe(true)
     for (const c of cases) {
       const result = spawnSync('dash', ['-n', asFile(generateService(c))], { encoding: 'utf8' })
       expect(result.stderr, `dash -n failed for ${JSON.stringify(c)}`).toBe('')
@@ -149,7 +197,10 @@ describe('shell validation of the generated script', () => {
     }
   })
 
-  it.runIf(has('shellcheck'))('passes shellcheck with no warnings or errors', () => {
+  it.runIf(validatorRuns('shellcheck'))('passes shellcheck with no warnings or errors', () => {
+    expect(isPresent('shellcheck'), 'shellcheck is required to validate the generated script').toBe(
+      true
+    )
     for (const c of cases) {
       // -S warning: fail on warning and error, allow style/info notes.
       const result = spawnSync(
@@ -162,8 +213,7 @@ describe('shell validation of the generated script', () => {
     }
   })
 
-  it.runIf(has('shellcheck'))('reports which shell validators ran', () => {
-    // Visible in test output so an absent validator is never mistaken for a pass.
+  it.runIf(validatorRuns('shellcheck'))('records the shellcheck version used', () => {
     expect(execFileSync('shellcheck', ['--version'], { encoding: 'utf8' })).toContain('ShellCheck')
   })
 })

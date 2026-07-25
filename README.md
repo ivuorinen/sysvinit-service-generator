@@ -4,14 +4,17 @@ This Vue 3 app generates templates for sysvinit services.
 
 ## Usage
 
+Throughout these steps, `<service-name>` is the "Service name" you entered — the
+app shows the exact destination path above each output.
+
 1. Fill in the form with the desired values.
 2. Copy the generated service script.
-3. Paste it into a new file in `/etc/init.d/`.
+3. Save it as `/etc/init.d/<service-name>`.
 4. Run the commands from the "Shell commands to run" panel — they `chmod +x` the
    script and register it with `update-rc.d`.
-5. Start the service with `service <filename> start`.
-6. Optionally save the "Logrotate" output to `/etc/logrotate.d/<filename>` to
-   rotate the service's log.
+5. Start the service with `service <service-name> start`.
+6. Optionally save the "Logrotate" output to
+   `/etc/logrotate.d/<service-name>` to rotate the service's log.
 
 The service name and username accept only letters, digits, dot, dash and
 underscore, because both are interpolated into shell and path contexts in the
@@ -34,8 +37,10 @@ npm test
 npm run build
 ```
 
-`npm test` validates the generated script with `shellcheck` and `dash` when those
-binaries are available.
+`npm test` validates the generated script with `shellcheck` and `dash`. Both are
+mandatory in CI. Locally, a missing binary skips that check and prints a
+`[skipped] … validation is INCOMPLETE` warning, so install both if you are
+changing the template.
 
 ## License
 

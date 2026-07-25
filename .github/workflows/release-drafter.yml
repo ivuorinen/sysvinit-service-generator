@@ -19,9 +19,9 @@ jobs:
     permissions:
       # write permission is required to create a github release
       contents: write
-      # write permission is required for autolabeler
-      # otherwise, read permission is required at least
-      pull-requests: write
+      # read is sufficient: write is only needed by the autolabeler, which this
+      # workflow does not run and .github/release-drafter.yml does not configure
+      pull-requests: read
     runs-on: ubuntu-latest
     steps:
       - name: 🚀 Run Release Drafter

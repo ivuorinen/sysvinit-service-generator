@@ -15,10 +15,11 @@ The app generates a sysvinit service script that users run as root. The generati
 
 # Changing the generated script
 
-`src/service-template.ts` emits a program that runs as root. Two rules:
+`src/service-template.ts` emits a program that runs as root. Three rules:
 
-- Interpolate user input through `shq()` (POSIX single-quoting), never raw. The service name and username are additionally restricted to `SAFE_NAME`.
-- Every generated variant must pass `shellcheck -s sh -S warning` and `dash -n`. Both run in `npm test`; add a case there when you add an input.
+- Interpolate user input through `shq()` (POSIX single-quoting), never raw.
+- Validation belongs at the generator boundary, not in the UI. `generateService()` and `generateLogRotate()` call `assertValidOptions()` and throw on a service name or username outside `SAFE_NAME`, because the bare `<NAME>` form also reaches contexts that cannot be quoted at all (the LSB header comment, the logrotate stanza path). `fill()` is intentionally not exported so the check cannot be bypassed.
+- Every generated variant must pass `shellcheck -s sh -S warning` and `dash -n`. Both are mandatory in CI; locally a missing binary skips the check and warns that validation is incomplete. Add a case to `src/__tests__/service-template.spec.ts` when you add an input.
 
 # Linting, Formatting & Tests
 

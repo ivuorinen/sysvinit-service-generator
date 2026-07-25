@@ -30,7 +30,7 @@ export interface ServiceOptions {
   command: string
 }
 
-export const serviceTemplateString = `#!/usr/bin/env sh
+const serviceTemplateString = `#!/usr/bin/env sh
 ### BEGIN INIT INFO
 # Provides:          <NAME>
 # Required-Start:    $local_fs $network $named $time $syslog
@@ -134,10 +134,12 @@ case "$1" in
     ;;
   *)
     echo "Usage: $0 {start|stop|status|restart|uninstall}"
+    # LSB reserves exit code 2 for invalid or excess arguments.
+    exit 2
 esac
 `
 
-export const logRotateString = `/var/log/<NAME>.log {
+const logRotateString = `/var/log/<NAME>.log {
     rotate 4
     weekly
     missingok
@@ -147,13 +149,36 @@ export const logRotateString = `/var/log/<NAME>.log {
 }`
 
 /**
+ * Reject options that cannot be safely interpolated.
+ *
+ * The generators are the trust boundary, not the UI. `shq()` protects the shell
+ * assignments, but the bare `<NAME>` form also reaches contexts that cannot be
+ * quoted at all — the LSB header comment and the logrotate stanza path — so a
+ * form-level check in App.vue is not sufficient for a direct caller.
+ */
+export const assertValidOptions = (options: ServiceOptions): void => {
+  if (!SAFE_NAME.test(options.service)) {
+    throw new Error(`Invalid service name: ${JSON.stringify(options.service)}`)
+  }
+  if (!SAFE_NAME.test(options.username)) {
+    throw new Error(`Invalid username: ${JSON.stringify(options.username)}`)
+  }
+  if (options.command.trim() === '') {
+    throw new Error('Command cannot be empty')
+  }
+}
+
+/**
  * Substitute the placeholders in `template`.
  *
  * `<*_Q>` placeholders are shell-quoted; the bare `<NAME>` and `<DESCRIPTION>`
  * forms appear in comment and path contexts. Order matters: `<NAME_Q>` must be
  * replaced before `<NAME>`, or the `<NAME>` pass would rewrite its prefix.
+ *
+ * Deliberately not exported: every caller must go through a generator so the
+ * validation above cannot be bypassed.
  */
-export const fill = (template: string, options: ServiceOptions): string =>
+const fill = (template: string, options: ServiceOptions): string =>
   template
     .replace(/<NAME_Q>/g, shq(options.service))
     .replace(/<COMMAND_Q>/g, shq(options.command))
@@ -161,7 +186,12 @@ export const fill = (template: string, options: ServiceOptions): string =>
     .replace(/<NAME>/g, options.service)
     .replace(/<DESCRIPTION>/g, oneLine(options.description))
 
-export const generateService = (options: ServiceOptions): string =>
-  fill(serviceTemplateString, options)
+export const generateService = (options: ServiceOptions): string => {
+  assertValidOptions(options)
+  return fill(serviceTemplateString, options)
+}
 
-export const generateLogRotate = (options: ServiceOptions): string => fill(logRotateString, options)
+export const generateLogRotate = (options: ServiceOptions): string => {
+  assertValidOptions(options)
+  return fill(logRotateString, options)
+}
