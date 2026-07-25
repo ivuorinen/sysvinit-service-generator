@@ -10,11 +10,9 @@ app shows the exact destination path above each output.
 1. Fill in the form with the desired values.
 2. Copy the generated service script.
 3. Save it as `/etc/init.d/<service-name>`.
-4. Run the commands from the "Shell commands to run" panel — they `chmod +x` the
-   script and register it with `update-rc.d`.
+4. Run the commands from the "Shell commands to run" panel.
 5. Start the service with `service <service-name> start`.
-6. Optionally save the "Logrotate" output to
-   `/etc/logrotate.d/<service-name>` to rotate the service's log.
+6. Optionally save the "Logrotate" output to `/etc/logrotate.d/<service-name>`.
 
 The service name and username accept only letters, digits, dot, dash and
 underscore, because both are interpolated into shell and path contexts in the

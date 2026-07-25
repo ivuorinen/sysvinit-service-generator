@@ -22,15 +22,16 @@ concurrency:
 
 jobs:
   lint:
+    name: MegaLinter
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
-      issues: write
-      packages: read
-      pull-requests: write
-      security-events: write
-      statuses: write
+      contents: write # APPLY_FIXES_MODE=commit pushes fixes
+      issues: write # may open an issue summarising failures
+      packages: read # pull the MegaLinter image from ghcr.io
+      pull-requests: write # post the lint report comment
+      security-events: write # upload SARIF to code scanning
+      statuses: write # set the commit status for the result
 
     steps:
       # https://github.com/ivuorinen/actions

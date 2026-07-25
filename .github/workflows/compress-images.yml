@@ -5,17 +5,27 @@ name: Compress Images on Demand
 on:
   workflow_dispatch:
 
-permissions: read-all
+# No workflow-wide token access; each job requests only what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
   CompressOnDemandOrSchedule:
     name: calibreapp/image-actions
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # commit the recompressed images
+      pull-requests: write # open the PR carrying them
     steps:
       - name: Checkout Repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Do not leave the token in .git/config. Both steps below authenticate
+          # with an explicit token input instead.
+          persist-credentials: false
 
       - name: Compress Images
         id: calibre
@@ -23,10 +33,14 @@ jobs:
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
+      # zizmor's `superfluous-actions` suggests replacing this with `gh pr
+      # create`. Kept deliberately: this action also creates the branch and
+      # commits the changed images, which a bare `gh pr create` does not do.
       - name: Create New Pull Request If Needed
         if: steps.calibre.outputs.markdown != ''
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           title: Compressed Images
           branch-suffix: timestamp
           commit-message: Compressed Images

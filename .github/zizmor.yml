@@ -1,0 +1,10 @@
+---
+# zizmor configuration. Run with `zizmor --persona pedantic .github/workflows`;
+# the pre-commit hook enforces zero findings at that persona.
+rules:
+  superfluous-actions:
+    ignore:
+      # peter-evans/create-pull-request is kept deliberately. zizmor suggests
+      # `gh pr create`, but the action also creates the branch and commits the
+      # recompressed images, which a bare `gh pr create` does not do.
+      - compress-images.yml

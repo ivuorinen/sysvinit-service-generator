@@ -15,18 +15,18 @@ concurrency:
   group: 'pages'
   cancel-in-progress: false
 
-permissions: read-all
+# No workflow-wide token access; each job requests only what it needs.
+permissions: {}
 
 jobs:
   build-and-deploy:
+    name: Build and deploy to GitHub Pages
     runs-on: ubuntu-latest
 
-    # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
     permissions:
-      contents: read
-      pages: write
-      id-token: write
-      statuses: write
+      contents: read # clone the repository to build it
+      pages: write # publish the built site to GitHub Pages
+      id-token: write # mint the OIDC token deploy-pages authenticates with
 
     environment:
       name: github-pages
@@ -34,6 +34,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Do not leave the token in .git/config, where a later step or
+          # uploaded artifact could expose it.
+          persist-credentials: false
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
@@ -41,7 +45,7 @@ jobs:
           cache: 'npm'
       - run: npm ci
         shell: bash
-      - run: npm run build --if-present
+      - run: npm run build
         shell: bash
 
       - name: Setup Pages
@@ -49,7 +53,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          # Upload entire repository
+          # Only the build output is published
           path: './dist/'
       - name: Deploy to GitHub Pages
         id: deployment

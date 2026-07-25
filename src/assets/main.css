@@ -1,18 +1,18 @@
-@import './base.css';
+@import url('./base.css');
 
-#app {
+.app {
   max-width: 1280px;
-  margin: 0 auto;
   padding: 2rem;
-  font-weight: normal;
+  margin: 0 auto;
+  font-weight: 400;
 }
 
 a,
 .accent {
-  text-decoration: none;
-  color: var(--color-accent);
-  transition: 0.4s;
   padding: 3px;
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: 0.4s;
 }
 
 header {
@@ -25,8 +25,8 @@ label {
 
   input {
     display: block;
-    margin-top: 1rem;
     padding: 0.4rem;
+    margin-top: 1rem;
     font-size: 1rem;
     border: 1px solid var(--color-border);
     border-radius: 4px;
@@ -47,16 +47,16 @@ button {
   padding: 0.4rem 0.8rem;
   font-size: 1rem;
   color: var(--color-background);
+  cursor: pointer;
   background: var(--color-accent);
   border: 1px solid var(--color-accent);
   border-radius: 4px;
-  cursor: pointer;
 }
 
 h1 {
-  font-weight: 500;
-  font-size: 2.6rem;
   margin-bottom: 2rem;
+  font-size: 2.6rem;
+  font-weight: 500;
 }
 
 h3 {
@@ -69,21 +69,21 @@ h3 {
   }
 }
 
-@media (min-width: 1024px) {
+@media (width >= 1024px) {
   body {
     display: flex;
     place-items: center;
   }
 
-  #app {
+  .app {
     display: grid;
     grid-template-columns: 1fr 2fr;
     padding: 0 2rem;
   }
 
   footer {
-    border-top: 1px solid var(--color-border);
     padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
     grid-column: 1 / -1;
   }
 }
@@ -94,21 +94,21 @@ textarea {
   max-width: fit-content;
   padding: 1rem;
   margin: 1rem 0;
+  font-family: monospace;
+  color: #f8f8f8;
+  background: #222;
   border: 1px solid var(--color-accent);
   border-radius: 5px;
-  background: #222222;
-  color: #f8f8f8;
-  font-family: monospace;
+}
 
-  &.just-right {
-    height: fit-content;
-    min-height: fit-content;
-    max-height: fit-content;
-  }
+.just-right {
+  height: fit-content;
+  min-height: fit-content;
+  max-height: fit-content;
+}
 
-  &.noresize {
-    resize: none;
-  }
+.noresize {
+  resize: none;
 }
 
 summary {

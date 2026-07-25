@@ -1,0 +1,95 @@
+---
+# Pre-commit hooks, run with prek (https://github.com/j178/prek) or pre-commit.
+#
+#   prek install        # once per clone
+#   prek run --all-files
+#
+# Every hook here mirrors a check that CI enforces, so a green commit means a
+# green `Build` job. Each one corresponds to a linter that has actually failed on
+# this repo before.
+exclude: |
+  (?x)^(
+    package-lock\.json|
+    docs/audit/findings/.*|
+    public/.*
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-json
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # editorconfig-checker failed CI on a three-space Markdown list continuation.
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
+    rev: 3.6.1
+    hooks:
+      - id: editorconfig-checker
+        alias: ec
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.49.1
+    hooks:
+      - id: markdownlint
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  # Offline so the hook needs no GitHub token; MegaLinter runs the online audits.
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.28.0
+    hooks:
+      - id: zizmor
+        args: [--offline, --persona, pedantic]
+
+  # Project checks run through the repo's own npm scripts so hook and CI use the
+  # same tool versions from node_modules. pass_filenames is false because these
+  # tools are configured to select their own inputs.
+  - repo: local
+    hooks:
+      - id: prettier
+        name: Prettier (format check)
+        entry: npm run format:check
+        language: system
+        pass_filenames: false
+        files: \.(ts|mjs|vue|css|json|ya?ml|md|html)$
+
+      - id: eslint
+        name: ESLint
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+        files: \.(ts|mjs|vue)$
+
+      - id: stylelint
+        name: Stylelint
+        entry: npm run lint:css
+        language: system
+        pass_filenames: false
+        files: \.css$
+
+      - id: type-check
+        name: vue-tsc type-check
+        entry: npm run type-check
+        language: system
+        pass_filenames: false
+        files: \.(ts|vue|json)$
+
+      # Includes the shellcheck and dash validation of the generated init
+      # script, which is the check that would have caught the $NAME and `&>`
+      # defects before they shipped.
+      - id: test
+        name: Vitest (incl. shellcheck/dash validation)
+        entry: npm test
+        language: system
+        pass_filenames: false
+        files: \.(ts|vue)$

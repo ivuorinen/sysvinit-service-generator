@@ -4,18 +4,24 @@ name: Stale
 # yamllint disable-line rule:truthy
 on:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: '0 8 * * *'
   workflow_call:
   workflow_dispatch:
 
-permissions: read-all
+# No workflow-wide token access; each job requests only what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
   stale:
+    name: Mark and close stale issues and pull requests
     runs-on: ubuntu-latest
     permissions:
-      contents: write # only for delete-branch option
-      issues: write
-      pull-requests: write
+      contents: write # only for the delete-branch option
+      issues: write # label, comment on and close stale issues
+      pull-requests: write # same, for stale pull requests
     steps:
       - uses: ivuorinen/actions/stale@de31e11dda6488eabe95e951ebb61c6d9d500865 # v2026.06.30

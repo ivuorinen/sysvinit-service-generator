@@ -1,0 +1,9 @@
+---
+# Markdownlint rules. Committed so local runs, the pre-commit hooks and
+# MegaLinter all agree; previously only MegaLinter's built-in config applied and
+# a bare `markdownlint` locally reported failures CI did not.
+default: true
+
+# Prose is not hard-wrapped in this repo; Prettier owns Markdown formatting and
+# leaves paragraph width alone (proseWrap: preserve).
+MD013: false
