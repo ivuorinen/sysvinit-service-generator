@@ -17,7 +17,11 @@ permissions: read-all
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
+    # Job-level permissions replace the workflow-level block rather than merging
+    # with it, so `contents: read` must be restated here for checkout and the
+    # dependency-graph API.
     permissions:
+      contents: read
       pull-requests: write
     steps:
       - name: 'Checkout Repository'

@@ -14,8 +14,11 @@ dist-ssr
 coverage
 *.local
 
-/cypress/videos/
-/cypress/screenshots/
+# Backstop: tsc must never emit next to the sources. Every tsconfig sets
+# `noEmit`, but a missing one would otherwise drop untracked .js into src/.
+/vite.config.js
+/vitest.config.js
+/src/**/*.js
 
 # Editor directories and files
 .vscode/*
@@ -28,8 +31,3 @@ coverage
 *.sw?
 
 *.tsbuildinfo
-
-# Yarn
-.yarn/
-yarn.lock
-.pnp.*

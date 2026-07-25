@@ -1,6 +1,8 @@
 {
-  "name": "",
-  "short_name": "",
+  "name": "sysvinit service generator",
+  "short_name": "sysvinit gen",
+  "start_url": "/sysvinit-service-generator/",
+  "scope": "/sysvinit-service-generator/",
   "icons": [
     { "src": "android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }

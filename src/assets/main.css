@@ -8,9 +8,9 @@
 }
 
 a,
-.green {
+.accent {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
+  color: var(--color-accent);
   transition: 0.4s;
   padding: 3px;
 }
@@ -31,6 +31,26 @@ label {
     border: 1px solid var(--color-border);
     border-radius: 4px;
   }
+
+  input:invalid {
+    border-color: var(--color-error);
+  }
+}
+
+.error {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--color-error);
+}
+
+button {
+  padding: 0.4rem 0.8rem;
+  font-size: 1rem;
+  color: var(--color-background);
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 h1 {
@@ -45,7 +65,7 @@ h3 {
 
 @media (hover: hover) {
   a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
+    background-color: var(--color-accent-subtle);
   }
 }
 
@@ -74,7 +94,7 @@ textarea {
   max-width: fit-content;
   padding: 1rem;
   margin: 1rem 0;
-  border: 1px solid hsla(160, 100%, 37%, 1);
+  border: 1px solid var(--color-accent);
   border-radius: 5px;
   background: #222222;
   color: #f8f8f8;

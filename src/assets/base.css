@@ -31,6 +31,12 @@
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
 
+  /* Accent is darker in light mode so it clears WCAG AA (4.67:1 on #ffffff);
+     the brighter value below reaches 7.25:1 on the dark background. */
+  --color-accent: hsl(160, 100%, 26%);
+  --color-accent-subtle: hsla(160, 100%, 37%, 0.2);
+  --color-error: hsl(0, 70%, 40%);
+
   --section-gap: 160px;
 }
 
@@ -45,6 +51,9 @@
 
     --color-heading: var(--vt-c-text-dark-1);
     --color-text: var(--vt-c-text-dark-2);
+
+    --color-accent: hsl(160, 100%, 37%);
+    --color-error: hsl(0, 100%, 72%);
   }
 }
 

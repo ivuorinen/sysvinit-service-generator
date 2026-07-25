@@ -4,10 +4,12 @@ name: Release Drafter
 # yamllint disable-line rule:truthy
 on:
   workflow_call:
-  # pull_request event is required only for autolabeler
-  pull_request:
-    # Only following types are handled by the action, but one can default to all as well
-    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+  # Push on main is what keeps the draft current: it fires as each PR merges.
+  # A pull_request trigger would only be needed for an autolabeler, and
+  # .github/release-drafter.yml defines none.
+  push:
+    branches: [main]
 
 permissions: read-all
 
