@@ -6,7 +6,7 @@ This repo hosts a small Vue 3 + TypeScript web app built with Vite. The source
 lives in `src/` and is served via `index.html`. Static assets are under
 `public/`. Config files include `vite.config.ts` for build settings,
 `tsconfig.*.json` for TypeScript, `eslint.config.mjs` for lint rules and
-`stylelint.config.mjs` for CSS.
+`.stylelintrc.json` for CSS.
 
 The app generates a sysvinit service script that users run as root. The
 generation logic lives in `src/service-template.ts`, deliberately free of Vue so
