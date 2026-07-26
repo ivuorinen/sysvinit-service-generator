@@ -1,0 +1,11 @@
+---
+# Markdownlint rules. Committed so local runs, the pre-commit hooks and
+# MegaLinter all agree; previously only MegaLinter's built-in config applied and
+# a bare `markdownlint` locally reported failures CI did not.
+#
+# MD013 (line length) is left at its default 80. Prettier enforces it rather
+# than a human: `proseWrap: always` plus a printWidth override of 80 for *.md
+# in .prettierrc.json means `npm run format` hard-wraps prose to match. Code
+# blocks and tables are still checked, so an over-long command is a real signal
+# rather than something to reflow.
+default: true

@@ -9,34 +9,37 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
-    "lint": "eslint . --fix",
-    "type-lint": "vue-tsc --noEmit -p tsconfig.lint.json",
-    "type-fix": "ts-standard --fix --project tsconfig.lint.json",
-    "format": "prettier --write src/ index.html .github/ .vscode/"
+    "test": "vitest run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:css": "stylelint \"src/**/*.css\"",
+    "lint:css:fix": "stylelint \"src/**/*.css\" --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "run-s lint lint:css format:check type-check test"
   },
   "dependencies": {
     "vue": "^3.4.21"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.0",
-    "@eslint/eslintrc": "^3.1.0",
-    "@eslint/js": "^10.0.0",
-    "@tsconfig/node24": "^24.0.0",
+    "@ivuorinen/stylelint-config": "^1.3.7",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/eslint-config-prettier": "^10",
     "@vue/eslint-config-typescript": "^14",
     "@vue/tsconfig": "^0.9.0",
-    "@vue/typescript-plugin": "^3.0.1",
     "eslint": "^10.0.0",
     "eslint-plugin-vue": "^10",
     "npm-run-all2": "^9.0.0",
     "prettier": "^3.0.3",
-    "ts-standard": "^12.0.2",
     "typescript": "~5.9.0",
     "vite": "^8.0.16",
     "vite-plugin-vue-devtools": "^8.0.0",
-    "vue-eslint-parser": "^10.2.0",
+    "vitest": "^4.1.10",
     "vue-tsc": "^3.0.0"
+  },
+  "allowScripts": {
+    "@ivuorinen/stylelint-config@1.3.5": true
   }
 }

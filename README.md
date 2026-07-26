@@ -4,34 +4,46 @@ This Vue 3 app generates templates for sysvinit services.
 
 ## Usage
 
+Throughout these steps, `<service-name>` is the "Service name" you entered — the
+app shows the exact destination path above each output.
+
 1. Fill in the form with the desired values.
-2. Copy the generated template.
-3. Paste it into a new file in `/etc/init.d/`.
-4. Make the file executable with `chmod +x /etc/init.d/<filename>`.
-5. Register the service with `update-rc.d <filename> defaults` on Ubuntu.
-6. Start the service with `service <filename> start`.
-7. ???
-8. Profit!
+2. Copy the generated service script.
+3. Save it as `/etc/init.d/<service-name>`.
+4. Run the commands from the "Shell commands to run" panel.
+5. Start the service with `service <service-name> start`.
+6. Optionally save the "Logrotate" output to `/etc/logrotate.d/<service-name>`.
+
+The service name and username accept only letters, digits, dot, dash and
+underscore, because both are interpolated into shell and path contexts in the
+generated script.
 
 ## Development
 
-Install dependencies and run the dev server with Yarn:
+Install dependencies and run the dev server with npm:
 
 ```bash
-yarn install
-yarn dev
+npm ci
+npm run dev
 
 # check code before committing
-yarn lint
-yarn type-lint
+npm run lint
+npm run type-check
+npm test
 
 # build the app
-yarn build
+npm run build
 ```
+
+`npm test` validates the generated script with `shellcheck` and `dash`. Both are
+mandatory in CI. Locally, a missing binary skips that check and prints a
+`[skipped] … validation is INCOMPLETE` warning, so install both if you are
+changing the template.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
 
 ## Acknowledgments
 

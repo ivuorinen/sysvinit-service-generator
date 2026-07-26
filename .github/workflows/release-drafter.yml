@@ -4,22 +4,28 @@ name: Release Drafter
 # yamllint disable-line rule:truthy
 on:
   workflow_call:
-  # pull_request event is required only for autolabeler
-  pull_request:
-    # Only following types are handled by the action, but one can default to all as well
-    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+  # Push on main is what keeps the draft current: it fires as each PR merges.
+  # A pull_request trigger would only be needed for an autolabeler, and
+  # .github/release-drafter.yml defines none.
+  push:
+    branches: [main]
 
-permissions: read-all
+# No workflow-wide token access; each job requests only what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   update_release_draft:
     name: ✏️ Draft release
+    # pull-requests stays read: write is only needed by the autolabeler, which
+    # this workflow does not run and release-drafter.yml does not configure.
     permissions:
-      # write permission is required to create a github release
-      contents: write
-      # write permission is required for autolabeler
-      # otherwise, read permission is required at least
-      pull-requests: write
+      contents: write # create and update the draft release
+      pull-requests: read # list merged PRs for the changelog
     runs-on: ubuntu-latest
     steps:
       - name: 🚀 Run Release Drafter

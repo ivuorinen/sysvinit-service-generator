@@ -1,4 +1,8 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+# Clean install of node dependencies, then lint, type-check, test and build.
+# Mirrors the install step of build-and-deploy.yml so a green PR means the
+# deploy job will install the same tree on the same Node version.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
 name: Build
@@ -7,19 +11,47 @@ on:
   pull_request:
     branches: ['main']
 
-permissions: read-all
+# No workflow-wide token access; each job requests only what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: Lint, type-check, test and build
     runs-on: ubuntu-latest
+
+    permissions:
+      # read: clone the repository to build it. Nothing here writes.
+      contents: read
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Do not leave the token in .git/config, where a later step or
+          # uploaded artifact could expose it.
+          persist-credentials: false
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm ci || npm install
+      # No `|| npm install` fallback: a lockfile that cannot be installed
+      # reproducibly must fail the PR rather than be silently regenerated.
+      - run: npm ci
         shell: bash
-      - run: npm run build --if-present
+      - run: npm run lint
+        shell: bash
+      - run: npm run lint:css
+        shell: bash
+      - run: npm run format:check
+        shell: bash
+      - run: npm run type-check
+        shell: bash
+      - run: npm test
+        shell: bash
+      # No `--if-present`: a missing build script must fail, not pass silently.
+      - run: npm run build
         shell: bash
