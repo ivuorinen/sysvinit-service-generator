@@ -53,7 +53,9 @@ repos:
 
   # Project checks run through the repo's own npm scripts so hook and CI use the
   # same tool versions from node_modules. pass_filenames is false because these
-  # tools are configured to select their own inputs.
+  # tools are configured to select their own inputs — which means `files:` must
+  # match every extension the tool covers, or a change to an unlisted extension
+  # skips the check entirely rather than merely narrowing it.
   - repo: local
     hooks:
       - id: prettier
@@ -61,14 +63,14 @@ repos:
         entry: npm run format:check
         language: system
         pass_filenames: false
-        files: \.(ts|mjs|vue|css|json|ya?ml|md|html)$
+        files: \.([cm]?[jt]sx?|vue|css|json|ya?ml|md|html)$
 
       - id: eslint
         name: ESLint
         entry: npm run lint
         language: system
         pass_filenames: false
-        files: \.(ts|mjs|vue)$
+        files: \.([cm]?[jt]sx?|vue)$
 
       - id: stylelint
         name: Stylelint
@@ -82,7 +84,7 @@ repos:
         entry: npm run type-check
         language: system
         pass_filenames: false
-        files: \.(ts|vue|json)$
+        files: \.([cm]?tsx?|vue|json)$
 
       # Includes the shellcheck and dash validation of the generated init
       # script, which is the check that would have caught the $NAME and `&>`
@@ -92,4 +94,4 @@ repos:
         entry: npm test
         language: system
         pass_filenames: false
-        files: \.(ts|vue)$
+        files: \.([cm]?[jt]sx?|vue)$

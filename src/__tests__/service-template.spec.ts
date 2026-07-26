@@ -172,6 +172,66 @@ describe('generator boundary validation', () => {
   })
 })
 
+describe('$-sequences in user input are substituted verbatim', () => {
+  // Regression guard: string replacements make $$, $&, $`, $' and $1 special,
+  // so `--pid $$` emitted `--pid $` and `$&` emitted the placeholder itself.
+  const dollars = ['$$', '$&', '$`', "$'", '$1', '$<NAME>']
+
+  // Asserted against shq(command) rather than a raw-quoted literal: an input
+  // containing a single quote is legitimately re-quoted, so only shq() defines
+  // the correct output. A mangled $-sequence still fails this.
+  it.each(dollars)('keeps %j intact in the command', (seq: string) => {
+    const command = `/usr/bin/foo ${seq} --end`
+    const script = generateService(opts({ command }))
+    expect(script).toContain(`SCRIPT=${shq(command)}`)
+    expect(script).not.toContain('<COMMAND_Q>')
+  })
+
+  // The definitive check: let a real shell parse the emitted assignment and
+  // confirm it yields the original string back, byte for byte.
+  it.runIf(validatorRuns('dash'))('round-trips through a real shell', () => {
+    for (const seq of dollars) {
+      const command = `/usr/bin/foo ${seq} --end`
+      const script = generateService(opts({ command }))
+      const assignment = script.split('\n').find((l) => l.startsWith('SCRIPT='))
+      const out = spawnSync('dash', ['-c', `${assignment}\nprintf '%s' "$SCRIPT"`], {
+        encoding: 'utf8'
+      })
+      expect(out.stderr, `dash rejected ${assignment ?? '<missing>'}`).toBe('')
+      expect(out.stdout, `round-trip failed for ${JSON.stringify(seq)}`).toBe(command)
+    }
+  })
+
+  it.each(dollars)('keeps %j intact in the description', (seq: string) => {
+    const script = generateService(opts({ description: `costs ${seq} more` }))
+    expect(script).toContain(`costs ${seq} more`)
+    expect(script).not.toContain('<DESCRIPTION>')
+  })
+
+  it('emits a shell PID reference unchanged', () => {
+    const script = generateService(opts({ command: '/usr/bin/foo --pid $$' }))
+    expect(script).toContain("SCRIPT='/usr/bin/foo --pid $$'")
+  })
+
+  // Substitution must be a single pass. Chained .replace() calls re-scanned
+  // already-substituted text, so a command containing the literal <NAME> was
+  // rewritten into the service name.
+  it.each(['<NAME>', '<DESCRIPTION>', '<COMMAND_Q>', '<NAME_Q>'])(
+    'does not re-substitute %s appearing inside the command',
+    (literal: string) => {
+      const command = `/usr/bin/foo ${literal} --end`
+      const script = generateService(opts({ command }))
+      expect(script).toContain(`SCRIPT='${command}'`)
+      expect(script).not.toContain(`/usr/bin/foo my-service`)
+    }
+  )
+
+  it('does not re-substitute a placeholder appearing inside the description', () => {
+    const script = generateService(opts({ description: 'see <NAME> for details' }))
+    expect(script).toContain('see <NAME> for details')
+  })
+})
+
 describe('generated logrotate config', () => {
   it('targets the service log', () => {
     expect(generateLogRotate(opts())).toContain('/var/log/my-service.log {')

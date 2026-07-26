@@ -172,19 +172,36 @@ export const assertValidOptions = (options: ServiceOptions): void => {
  * Substitute the placeholders in `template`.
  *
  * `<*_Q>` placeholders are shell-quoted; the bare `<NAME>` and `<DESCRIPTION>`
- * forms appear in comment and path contexts. Order matters: `<NAME_Q>` must be
- * replaced before `<NAME>`, or the `<NAME>` pass would rewrite its prefix.
+ * forms appear in comment and path contexts that cannot carry quotes.
  *
  * Deliberately not exported: every caller must go through a generator so the
  * validation above cannot be bypassed.
+ *
+ * Two properties this implementation must keep, both of which had already gone
+ * wrong once:
+ *
+ *  - **One pass.** Chained `.replace()` calls re-scan text that an earlier call
+ *    substituted, so a command containing the literal `<NAME>` was rewritten
+ *    into the service name by the later pass. A single regex with an
+ *    alternation never re-examines what it just inserted. `NAME_Q` precedes
+ *    `NAME` in the alternation so the longer key wins.
+ *  - **Callback, not string.** In a string replacement `$$`, `$&`, `` $` ``,
+ *    `$'` and `$1` are special, so `--pid $$` (the shell's PID, entirely
+ *    ordinary) emitted a single `$`, and `$&` emitted the placeholder itself
+ *    back into the script. A callback's return value is inserted verbatim.
  */
-const fill = (template: string, options: ServiceOptions): string =>
-  template
-    .replace(/<NAME_Q>/g, shq(options.service))
-    .replace(/<COMMAND_Q>/g, shq(options.command))
-    .replace(/<USERNAME_Q>/g, shq(options.username))
-    .replace(/<NAME>/g, options.service)
-    .replace(/<DESCRIPTION>/g, oneLine(options.description))
+const PLACEHOLDER = /<(NAME_Q|COMMAND_Q|USERNAME_Q|NAME|DESCRIPTION)>/g
+
+const fill = (template: string, options: ServiceOptions): string => {
+  const values: Record<string, string> = {
+    NAME_Q: shq(options.service),
+    COMMAND_Q: shq(options.command),
+    USERNAME_Q: shq(options.username),
+    NAME: options.service,
+    DESCRIPTION: oneLine(options.description)
+  }
+  return template.replace(PLACEHOLDER, (_match, key: string) => values[key])
+}
 
 export const generateService = (options: ServiceOptions): string => {
   assertValidOptions(options)
