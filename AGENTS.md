@@ -71,7 +71,7 @@ runs Prettier, ESLint, Stylelint, actionlint, zizmor and the shell-validation
 tests, so the lint failures this repo has hit before cannot reach a commit
 again.
 
-Two config traps, both of which have bitten this repo:
+Config traps, all of which have bitten this repo:
 
 - Do not add a `parserOptions.project` block to `eslint.config.mjs`. It
   conflicts with the `projectService` that `@vue/eslint-config-typescript`
@@ -79,3 +79,10 @@ Two config traps, both of which have bitten this repo:
   errors while linting nothing.
 - Every tsconfig must set `noEmit`. A referenced project without it makes
   `npm run type-check` emit compiled `.js` next to the sources.
+- Do not reintroduce `baseUrl`. It is deprecated in TypeScript 6 and stops
+  working in 7; `type-check` fails with TS5101 while it is present. The `@/*`
+  alias in `tsconfig.app.json` (mirrored in `vite.config.ts`) needs only
+  `paths`, whose entries resolve relative to the tsconfig since TS 4.1.
+- Keep the tsconfig files comment-free. TypeScript accepts JSONC, but the
+  `check-json` pre-commit hook and MegaLinter's `jsonlint` parse strict JSON and
+  will reject `//` comments. Record the reasoning here instead.
