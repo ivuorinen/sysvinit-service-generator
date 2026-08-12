@@ -46,7 +46,7 @@ repos:
 
   # Offline so the hook needs no GitHub token; MegaLinter runs the online audits.
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.28.0
+    rev: v1.29.0
     hooks:
       - id: zizmor
         args: [--offline, --persona, pedantic]
