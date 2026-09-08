@@ -35,4 +35,4 @@ jobs:
 
     steps:
       # https://github.com/ivuorinen/actions
-      - uses: ivuorinen/actions/pr-lint@de31e11dda6488eabe95e951ebb61c6d9d500865 # v2026.06.30
+      - uses: ivuorinen/actions/pr-lint@1371b68660d4b14e22dd3f2929afb490d7ef6550 # v2026.09.04
