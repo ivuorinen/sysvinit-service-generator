@@ -1,8 +1,8 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import {
   SAFE_NAME,
@@ -164,6 +164,48 @@ describe('generated service script', () => {
     // LSB reserves 2 for invalid or excess arguments; exiting 0 would hide
     // usage errors from callers and monitoring.
     expect(generateService(opts())).toMatch(/echo "Usage: \$0 [^"]+"\n\s+#[^\n]*\n\s+exit 2\nesac/)
+  })
+})
+
+describe('generated script exit codes follow LSB', () => {
+  // The script hardcodes /run/$NAME.pid. Sourcing its functions without the
+  // trailing `case` dispatcher and repointing PIDFILE runs the real start, stop
+  // and status code unprivileged, against a pidfile this test controls.
+  const dir = mkdtempSync(join(tmpdir(), 'svc-'))
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  const script = generateService(opts())
+  const functions = script.slice(0, script.indexOf('case "$1" in'))
+  const pidfile = join(dir, 'svc.pid')
+  /** Above Linux's pid_max ceiling (2^22), so never a live process. */
+  const DEAD = 99999999
+
+  /** Run one shell command with PIDFILE holding `pid`, or absent without one. */
+  const run = (command: string, pid?: number) => {
+    rmSync(pidfile, { force: true })
+    if (pid !== undefined) writeFileSync(pidfile, `${pid}\n`)
+    return spawnSync('dash', ['-c', `${functions}\nPIDFILE=${shq(pidfile)}\n${command}`], {
+      encoding: 'utf8'
+    })
+  }
+
+  it.runIf(validatorRuns('dash'))('status: 0 running, 1 dead with pidfile, 3 not running', () => {
+    expect(run('status', process.pid).status).toBe(0)
+    expect(run('status', DEAD).status).toBe(1)
+    expect(run('status').status).toBe(3)
+  })
+
+  it.runIf(validatorRuns('dash'))('start on a running service succeeds', () => {
+    // Returns before touching /var/log, so it needs no privileges.
+    const result = run('start', process.pid)
+    expect(result.stderr).toContain('Service already running')
+    expect(result.status).toBe(0)
+  })
+
+  it.runIf(validatorRuns('dash'))('stop on a stopped service succeeds', () => {
+    const result = run('stop')
+    expect(result.stderr).toContain('Service not running')
+    expect(result.status).toBe(0)
   })
 })
 

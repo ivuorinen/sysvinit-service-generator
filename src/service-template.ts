@@ -47,10 +47,13 @@ RUNAS=<USERNAME_Q>
 PIDFILE=/run/$NAME.pid
 LOGFILE=/var/log/$NAME.log
 
+# Exit codes follow LSB: start on a running service and stop on a stopped one
+# succeed; status returns 0 running, 1 dead with a pidfile, 3 not running.
+
 start() {
   if [ -f "$PIDFILE" ] && [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo "Service already running" >&2
-    return 1
+    return 0
   fi
   echo 'Starting service...' >&2
 
@@ -79,7 +82,7 @@ start() {
 stop() {
   if [ ! -f "$PIDFILE" ] || ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo 'Service not running' >&2
-    return 1
+    return 0
   fi
   echo 'Stopping service...' >&2
   kill -15 "$(cat "$PIDFILE")" && rm -f "$PIDFILE"
@@ -108,9 +111,11 @@ status() {
       echo "Running, the PID is $PID"
     else
       printf "%s\\n" "The process appears to be dead but pidfile still exists"
+      return 1
     fi
   else
     printf "%s\\n" "Service not running"
+    return 3
   fi
 }
 
