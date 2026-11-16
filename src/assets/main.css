@@ -32,7 +32,7 @@ label {
     border-radius: 4px;
   }
 
-  input:invalid {
+  [aria-invalid='true'] {
     border-color: var(--color-error);
   }
 }
@@ -41,6 +41,11 @@ label {
   display: block;
   margin-top: 0.4rem;
   color: var(--color-error);
+}
+
+/* `display: block` above would otherwise override the `hidden` attribute. */
+.error[hidden] {
+  display: none;
 }
 
 button {
@@ -59,7 +64,7 @@ h1 {
   font-weight: 500;
 }
 
-h3 {
+h2 {
   font-size: 1.2rem;
 }
 
@@ -99,6 +104,10 @@ textarea {
   background: #222;
   border: 1px solid var(--color-accent);
   border-radius: 5px;
+}
+
+.tall {
+  height: 400px;
 }
 
 .just-right {

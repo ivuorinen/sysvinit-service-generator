@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   SAFE_NAME,
+  fieldValidity,
   generateLogRotate,
   generateService,
   oneLine,
@@ -85,6 +86,31 @@ describe('name validation', () => {
   })
 })
 
+describe('field validity', () => {
+  it('reports every checked field independently', () => {
+    expect(fieldValidity(opts())).toEqual({ service: true, username: true, command: true })
+    expect(fieldValidity(opts({ service: 'a b' }))).toEqual({
+      service: false,
+      username: true,
+      command: true
+    })
+    expect(fieldValidity(opts({ username: 'my user' }))).toEqual({
+      service: true,
+      username: false,
+      command: true
+    })
+    expect(fieldValidity(opts({ command: '  ' }))).toEqual({
+      service: true,
+      username: true,
+      command: false
+    })
+  })
+
+  it('does not check the free-text description', () => {
+    expect(fieldValidity(opts({ description: '' }))).not.toHaveProperty('description')
+  })
+})
+
 describe('generated service script', () => {
   it('assigns every shell variable it references', () => {
     const script = generateService(opts())
@@ -142,7 +168,7 @@ describe('generated service script', () => {
 })
 
 describe('generator boundary validation', () => {
-  // The generators are the trust boundary, not App.vue: a direct caller must not
+  // The generators are the trust boundary, not the UI: a direct caller must not
   // be able to reach the unquotable <NAME> contexts (LSB comment, logrotate
   // stanza path) with arbitrary input.
   const bad = ['x; touch /tmp/PWNED #', 'my app', 'a/b', '$(id)', 'a`b', '']

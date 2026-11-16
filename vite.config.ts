@@ -1,16 +1,8 @@
-import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from 'vitest/config'
 
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import VueDevTools from 'vite-plugin-vue-devtools'
-
-// https://vitejs.dev/config/
+// One file configures both Vite and Vitest.
+// https://vite.dev/config/ and https://vitest.dev/config/
 export default defineConfig({
-  plugins: [vue(), VueDevTools()],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
-  },
+  // GitHub Pages serves the site from /<repository>/.
   base: '/sysvinit-service-generator/'
 })

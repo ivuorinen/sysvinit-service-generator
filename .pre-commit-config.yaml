@@ -63,14 +63,14 @@ repos:
         entry: npm run format:check
         language: system
         pass_filenames: false
-        files: \.([cm]?[jt]sx?|vue|css|json|ya?ml|md|html)$
+        files: \.([cm]?[jt]sx?|css|json|ya?ml|md|html)$
 
       - id: eslint
         name: ESLint
         entry: npm run lint
         language: system
         pass_filenames: false
-        files: \.([cm]?[jt]sx?|vue)$
+        files: \.[cm]?[jt]sx?$
 
       - id: stylelint
         name: Stylelint
@@ -80,18 +80,19 @@ repos:
         files: \.css$
 
       - id: type-check
-        name: vue-tsc type-check
+        name: tsc type-check
         entry: npm run type-check
         language: system
         pass_filenames: false
-        files: \.([cm]?tsx?|vue|json)$
+        files: \.([cm]?tsx?|json)$
 
       # Includes the shellcheck and dash validation of the generated init
       # script, which is the check that would have caught the $NAME and `&>`
-      # defects before they shipped.
+      # defects before they shipped. index.html is listed because the UI tests
+      # load it.
       - id: test
         name: Vitest (incl. shellcheck/dash validation)
         entry: npm test
         language: system
         pass_filenames: false
-        files: \.([cm]?[jt]sx?|vue)$
+        files: \.([cm]?[jt]sx?|html)$

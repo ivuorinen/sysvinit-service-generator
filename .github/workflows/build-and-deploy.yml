@@ -1,6 +1,6 @@
 ---
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Build and Deploy Vue Application to Github Pages
+name: Build and Deploy to GitHub Pages
 on:
   # Runs on pushes targeting the default branch
   push:

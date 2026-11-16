@@ -1,6 +1,6 @@
 # sysvinit service generator
 
-This Vue 3 app generates templates for sysvinit services.
+This web app generates templates for sysvinit services.
 
 ## Usage
 
@@ -47,5 +47,4 @@ for details.
 
 ## Acknowledgments
 
-- [Vue.js](https://vuejs.org/)
 - [yunginnanet/sysvinit-service-generator](https://github.com/yunginnanet/sysvinit-service-generator/)

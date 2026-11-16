@@ -1,6 +1,6 @@
 // Generation of the sysvinit service script and its logrotate config.
 //
-// Kept free of Vue so it can be tested as a pure function: the output is a
+// Kept free of the DOM so it can be tested as a pure function: the output is a
 // program that runs as root, so it is validated by unit tests plus `shellcheck`
 // and `dash -n` (see src/__tests__/service-template.spec.ts).
 
@@ -9,8 +9,7 @@
  *
  * These values reach unquoted path contexts in the generated script
  * (`/run/$NAME.pid`, `update-rc.d`), so the set is restricted rather than
- * relying on quoting alone. Keep in sync with the `pattern` attribute on the
- * corresponding inputs in App.vue.
+ * relying on quoting alone.
  */
 export const SAFE_NAME = /^[A-Za-z0-9_.-]+$/
 
@@ -149,21 +148,38 @@ const logRotateString = `/var/log/<NAME>.log {
 }`
 
 /**
+ * Per-field validity, the single definition of what the generators accept.
+ *
+ * The UI marks fields from this rather than re-implementing the rules, so the
+ * form cannot accept input that `generateService()` then throws on. The
+ * description is absent on purpose: it is free text, sanitised by `oneLine()`
+ * rather than rejected.
+ */
+export const fieldValidity = (
+  options: ServiceOptions
+): Record<'service' | 'username' | 'command', boolean> => ({
+  service: SAFE_NAME.test(options.service),
+  username: SAFE_NAME.test(options.username),
+  command: options.command.trim() !== ''
+})
+
+/**
  * Reject options that cannot be safely interpolated.
  *
  * The generators are the trust boundary, not the UI. `shq()` protects the shell
  * assignments, but the bare `<NAME>` form also reaches contexts that cannot be
  * quoted at all — the LSB header comment and the logrotate stanza path — so a
- * form-level check in App.vue is not sufficient for a direct caller.
+ * check in the UI alone would not protect a direct caller.
  */
-export const assertValidOptions = (options: ServiceOptions): void => {
-  if (!SAFE_NAME.test(options.service)) {
+const assertValidOptions = (options: ServiceOptions): void => {
+  const valid = fieldValidity(options)
+  if (!valid.service) {
     throw new Error(`Invalid service name: ${JSON.stringify(options.service)}`)
   }
-  if (!SAFE_NAME.test(options.username)) {
+  if (!valid.username) {
     throw new Error(`Invalid username: ${JSON.stringify(options.username)}`)
   }
-  if (options.command.trim() === '') {
+  if (!valid.command) {
     throw new Error('Command cannot be empty')
   }
 }
