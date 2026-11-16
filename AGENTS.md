@@ -18,7 +18,9 @@ DOM so it can be unit-tested; `src/main.ts` is only the UI around it.
   format for PR titles.
 - Use **npm** for installing packages. `package-lock.json` is the committed
   lockfile and every CI job installs from it with `npm ci`.
-- Run linting, type checks and tests before committing any code changes.
+- Run `npm run check` before committing any code change; it runs lint, type
+  check, formatting check and tests. Setup and the individual commands are in
+  `CONTRIBUTING.md`.
 - Skip linting and type checks when editing only documentation or comments.
 - Follow the style rules defined by Prettier and ESLint. Prettier settings: no
   semicolons, single quotes, width 100, two spaces. Prettier is not wired into
@@ -49,22 +51,7 @@ DOM so it can be unit-tested; `src/main.ts` is only the UI around it.
   that validation is incomplete. Add a case to
   `src/__tests__/service-template.spec.ts` when you add an input.
 
-## Linting, formatting and tests
-
-```bash
-npm ci             # once
-prek install       # once, installs the pre-commit hooks
-
-npm run lint       # ESLint, report only
-npm run lint:fix   # ESLint with autofix
-npm run lint:css   # Stylelint, report only
-npm run lint:css:fix # Stylelint with autofix
-npm run type-check # type-checks with tsc
-npm test           # Vitest, incl. shellcheck/dash validation of the output
-
-npm run format     # formats using Prettier
-npm run check      # everything the PR gate runs
-```
+## Tests and coverage
 
 `npm test` runs Vitest with coverage and fails below 100% lines, branches,
 functions and statements over `src/**/*.ts` (`thresholds` in `vite.config.ts`).
