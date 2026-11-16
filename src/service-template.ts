@@ -72,8 +72,7 @@ start() {
   if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
     echo "$NAME is now running, the PID is $PID"
   else
-    echo ''
-    echo "Error! Could not start $NAME!"
+    echo "Error! Could not start $NAME!" >&2
     rm -f "$PIDFILE"
     return 1
   fi
@@ -150,7 +149,7 @@ case "$1" in
     stop && start
     ;;
   *)
-    echo "Usage: $0 {start|stop|status|restart|uninstall}"
+    echo "Usage: $0 {start|stop|status|restart|uninstall}" >&2
     # LSB reserves exit code 2 for invalid or excess arguments.
     exit 2
 esac

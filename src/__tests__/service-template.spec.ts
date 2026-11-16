@@ -163,7 +163,15 @@ describe('generated service script', () => {
   it('sets a non-zero exit status for an unknown action', () => {
     // LSB reserves 2 for invalid or excess arguments; exiting 0 would hide
     // usage errors from callers and monitoring.
-    expect(generateService(opts())).toMatch(/echo "Usage: \$0 [^"]+"\n\s+#[^\n]*\n\s+exit 2\nesac/)
+    expect(generateService(opts())).toMatch(
+      /echo "Usage: \$0 [^"]+" >&2\n\s+#[^\n]*\n\s+exit 2\nesac/
+    )
+  })
+
+  it('reports a failed start on stderr', () => {
+    const script = generateService(opts())
+    expect(script).toContain('echo "Error! Could not start $NAME!" >&2')
+    expect(script).not.toContain("echo ''")
   })
 
   it('stop waits for the process to exit before removing the pidfile', () => {
@@ -226,6 +234,13 @@ describe('generated script exit codes follow LSB', () => {
     const result = run('stop')
     expect(result.stderr).toContain('Service not running')
     expect(result.status).toBe(0)
+  })
+
+  it.runIf(validatorRuns('dash'))('an unknown action prints usage on stderr and exits 2', () => {
+    const result = spawnSync('dash', ['-s', 'bogus'], { input: script, encoding: 'utf8' })
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toMatch(/^Usage: /)
+    expect(result.status).toBe(2)
   })
 })
 
