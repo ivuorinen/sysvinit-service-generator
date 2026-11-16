@@ -162,6 +162,7 @@ const logRotateString = `/var/log/<NAME>.log {
     notifempty
     compress
     delaycompress
+    copytruncate
 }`
 
 /**

@@ -339,6 +339,12 @@ describe('generated logrotate config', () => {
   it('targets the service log', () => {
     expect(generateLogRotate(opts())).toContain('/var/log/my-service.log {')
   })
+
+  it('truncates in place, because the daemon keeps its log descriptor open', () => {
+    // Without copytruncate the daemon kept appending to the renamed .1 file,
+    // which delaycompress later unlinks: output went to a deleted inode.
+    expect(generateLogRotate(opts())).toMatch(/^ {4}copytruncate$/m)
+  })
 })
 
 // These are the checks that would have caught the $NAME, &> and non-POSIX
