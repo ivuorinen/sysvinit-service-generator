@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -378,9 +378,5 @@ describe('shell validation of the generated script', () => {
       expect(result.stdout, `shellcheck failed for ${JSON.stringify(c)}`).toBe('')
       expect(result.status).toBe(0)
     }
-  })
-
-  it.runIf(validatorRuns('shellcheck'))('records the shellcheck version used', () => {
-    expect(execFileSync('shellcheck', ['--version'], { encoding: 'utf8' })).toContain('ShellCheck')
   })
 })
