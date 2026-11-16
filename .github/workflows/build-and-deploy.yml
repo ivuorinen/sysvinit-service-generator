@@ -45,6 +45,11 @@ jobs:
           cache: 'npm'
       - run: npm ci
         shell: bash
+      # main is not branch-protected, so a direct push skips the PR gate. Run
+      # it here too: lint, type-check, coverage and the shellcheck/dash
+      # validation of the generated script must pass before anything deploys.
+      - run: npm run check
+        shell: bash
       - run: npm run build
         shell: bash
 
