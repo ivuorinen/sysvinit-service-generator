@@ -66,13 +66,16 @@ npm run format     # formats using Prettier
 npm run check      # everything the PR gate runs
 ```
 
-The UI test (`src/__tests__/main.spec.ts`) runs under happy-dom and loads the
-real `index.html`, so markup and code cannot drift apart unnoticed.
+`npm test` runs Vitest with coverage and fails below 100% lines, branches,
+functions and statements over `src/**/*.ts` (`thresholds` in `vite.config.ts`).
+Add tests for new code; do not add coverage exclusions. The UI test
+(`src/__tests__/main.spec.ts`) runs under happy-dom and loads the real
+`index.html`, so markup and code cannot drift apart unnoticed.
 
 Pre-commit hooks are managed with [prek](https://github.com/j178/prek), a
 drop-in pre-commit runner (`pre-commit` works too). `.pre-commit-config.yaml`
-runs Prettier, ESLint, Stylelint, actionlint, zizmor and the shell-validation
-tests, so the lint failures this repo has hit before cannot reach a commit
+runs Prettier, ESLint, Stylelint, actionlint, zizmor and the tests with
+coverage, so the lint failures this repo has hit before cannot reach a commit
 again.
 
 Config traps, all of which have bitten this repo:

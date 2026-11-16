@@ -86,12 +86,12 @@ repos:
         pass_filenames: false
         files: \.([cm]?tsx?|json)$
 
-      # Includes the shellcheck and dash validation of the generated init
-      # script, which is the check that would have caught the $NAME and `&>`
-      # defects before they shipped. index.html is listed because the UI tests
-      # load it.
+      # Includes the 100% coverage gate and the shellcheck and dash validation
+      # of the generated init script, which is the check that would have caught
+      # the $NAME and `&>` defects before they shipped. index.html is listed
+      # because the UI tests load it.
       - id: test
-        name: Vitest (incl. shellcheck/dash validation)
+        name: Vitest (coverage, shellcheck/dash validation)
         entry: npm test
         language: system
         pass_filenames: false
