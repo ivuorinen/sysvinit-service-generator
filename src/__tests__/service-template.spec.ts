@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -233,6 +233,31 @@ describe('generated script exit codes follow LSB', () => {
     expect(result.stderr).toContain('Service not running')
     expect(result.status).toBe(0)
   })
+
+  it.runIf(validatorRuns('dash'))(
+    'stop keeps a pidfile that a start rewrote during the wait',
+    () => {
+      // A start that runs while stop waits writes its own PID, and removing that
+      // pidfile orphaned the new instance. The target outlives SIGTERM by 0.3s so
+      // stop enters its wait loop, where the overridden `sleep` stands in for the
+      // concurrent start. The target's own loop ends within 5s, so a failing run
+      // leaves no process behind.
+      const target = `trap 'sleep 0.3; exit 0' TERM; i=0; while [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done`
+      const result = run(
+        [
+          // Launched from a subshell that exits at once, so init reaps the target
+          // when it dies; a child of this shell would stay a zombie that kill -0
+          // still finds.
+          `(sh -c ${shq(target)} >/dev/null 2>&1 & echo $! > "$PIDFILE")`,
+          `sleep() { echo ${process.pid} > "$PIDFILE"; command sleep "$@"; }`,
+          'stop'
+        ].join('\n')
+      )
+      expect(result.stderr).toContain('Service stopped')
+      expect(result.status).toBe(0)
+      expect(readFileSync(pidfile, 'utf8').trim()).toBe(String(process.pid))
+    }
+  )
 
   it.runIf(validatorRuns('dash'))('an unknown action prints usage on stderr and exits 2', () => {
     const result = spawnSync('dash', ['-s', 'bogus'], { input: script, encoding: 'utf8' })

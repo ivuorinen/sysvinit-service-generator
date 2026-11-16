@@ -100,7 +100,11 @@ stop() {
     WAITED=$((WAITED + 1))
     sleep 1
   done
-  rm -f "$PIDFILE"
+  # A start that ran during the wait has written its own PID: removing that
+  # pidfile would orphan the new instance. Remove only the stopped one's.
+  if [ "$(cat "$PIDFILE" 2>/dev/null)" = "$PID" ]; then
+    rm -f "$PIDFILE"
+  fi
   echo 'Service stopped' >&2
 }
 
