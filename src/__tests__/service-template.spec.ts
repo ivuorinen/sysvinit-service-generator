@@ -165,6 +165,26 @@ describe('generated service script', () => {
     // usage errors from callers and monitoring.
     expect(generateService(opts())).toMatch(/echo "Usage: \$0 [^"]+"\n\s+#[^\n]*\n\s+exit 2\nesac/)
   })
+
+  it('stop waits for the process to exit before removing the pidfile', () => {
+    // Regression guard: `kill -15 … && rm -f "$PIDFILE"` returned while a
+    // draining daemon still held its port, so restart's start() raced it.
+    const script = generateService(opts())
+    const stop = script.slice(script.indexOf('stop() {'), script.indexOf('uninstall() {'))
+    const kill = stop.indexOf('kill -15 "$PID"')
+    const wait = stop.indexOf('while kill -0 "$PID"')
+    // The first removal, so an early `rm` beside the kill is caught too.
+    const remove = stop.indexOf('rm -f "$PIDFILE"')
+    expect(kill).toBeGreaterThan(-1)
+    expect(wait).toBeGreaterThan(kill)
+    expect(remove).toBeGreaterThan(stop.indexOf('done', wait))
+  })
+
+  it('does not start or uninstall after a failed stop', () => {
+    const script = generateService(opts())
+    expect(script).toMatch(/restart\)\n\s+stop && start\n/)
+    expect(script).toContain('stop || return 1')
+  })
 })
 
 describe('generated script exit codes follow LSB', () => {

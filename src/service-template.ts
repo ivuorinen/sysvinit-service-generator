@@ -84,8 +84,22 @@ stop() {
     echo 'Service not running' >&2
     return 0
   fi
+  PID="$(cat "$PIDFILE")"
   echo 'Stopping service...' >&2
-  kill -15 "$(cat "$PIDFILE")" && rm -f "$PIDFILE"
+  kill -15 "$PID"
+
+  # Wait for the exit: removing the pidfile at once let restart start a second
+  # instance while the first still held its port.
+  WAITED=0
+  while kill -0 "$PID" 2>/dev/null; do
+    if [ "$WAITED" -ge 10 ]; then
+      echo "Error! $NAME did not stop within 10 seconds" >&2
+      return 1
+    fi
+    WAITED=$((WAITED + 1))
+    sleep 1
+  done
+  rm -f "$PIDFILE"
   echo 'Service stopped' >&2
 }
 
@@ -93,7 +107,7 @@ uninstall() {
   printf '%s' "Are you really sure you want to uninstall this service? That cannot be undone. [yes|No] "
   read -r SURE
   if [ "$SURE" = "yes" ]; then
-    stop
+    stop || return 1
     rm -f "$PIDFILE"
     echo "Notice: log file was not removed: $LOGFILE" >&2
     update-rc.d -f "$NAME" remove
@@ -133,8 +147,7 @@ case "$1" in
     uninstall
     ;;
   restart)
-    stop
-    start
+    stop && start
     ;;
   *)
     echo "Usage: $0 {start|stop|status|restart|uninstall}"
