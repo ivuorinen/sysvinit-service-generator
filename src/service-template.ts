@@ -219,8 +219,7 @@ const assertValidOptions = (options: ServiceOptions): void => {
  *  - **One pass.** Chained `.replace()` calls re-scan text that an earlier call
  *    substituted, so a command containing the literal `<NAME>` was rewritten
  *    into the service name by the later pass. A single regex with an
- *    alternation never re-examines what it just inserted. `NAME_Q` precedes
- *    `NAME` in the alternation so the longer key wins.
+ *    alternation never re-examines what it just inserted.
  *  - **Callback, not string.** In a string replacement `$$`, `$&`, `` $` ``,
  *    `$'` and `$1` are special, so `--pid $$` (the shell's PID, entirely
  *    ordinary) emitted a single `$`, and `$&` emitted the placeholder itself
