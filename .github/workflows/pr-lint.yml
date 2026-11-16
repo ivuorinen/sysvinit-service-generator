@@ -8,14 +8,6 @@ on:
 
 permissions: {}
 
-env: # Comment env block if you don't want to apply fixes
-  # Apply linter fixes configuration
-  APPLY_FIXES: all
-  APPLY_FIXES_EVENT: all
-  APPLY_FIXES_MODE: commit
-  SARIF_REPORTER: true
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
@@ -36,3 +28,11 @@ jobs:
     steps:
       # https://github.com/ivuorinen/actions
       - uses: ivuorinen/actions/pr-lint@1371b68660d4b14e22dd3f2929afb490d7ef6550 # v2026.09.04
+        # Step-scoped, not workflow-wide: only this step receives the
+        # write-scoped token. Remove the APPLY_FIXES keys to stop auto-fixing.
+        env:
+          APPLY_FIXES: all
+          APPLY_FIXES_EVENT: all
+          APPLY_FIXES_MODE: commit
+          SARIF_REPORTER: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
