@@ -26,13 +26,6 @@ const opts = (overrides: Partial<ServiceOptions> = {}): ServiceOptions => ({
   ...overrides
 })
 
-/** Write a generated script to a temp file and return its path. */
-const asFile = (script: string): string => {
-  const path = join(mkdtempSync(join(tmpdir(), 'svc-')), 'init.sh')
-  writeFileSync(path, script)
-  return path
-}
-
 const isPresent = (bin: string): boolean =>
   spawnSync('sh', ['-c', `command -v ${bin}`]).status === 0
 
@@ -362,10 +355,11 @@ describe('shell validation of the generated script', () => {
     opts({ description: 'Line one\n# hijacked' })
   ]
 
+  // Both validators read the script from stdin, so no temp files are left behind.
   it.runIf(validatorRuns('dash'))('parses under dash', () => {
     expect(isPresent('dash'), 'dash is required to validate the generated script').toBe(true)
     for (const c of cases) {
-      const result = spawnSync('dash', ['-n', asFile(generateService(c))], { encoding: 'utf8' })
+      const result = spawnSync('dash', ['-n'], { input: generateService(c), encoding: 'utf8' })
       expect(result.stderr, `dash -n failed for ${JSON.stringify(c)}`).toBe('')
       expect(result.status).toBe(0)
     }
@@ -377,11 +371,10 @@ describe('shell validation of the generated script', () => {
     )
     for (const c of cases) {
       // -S warning: fail on warning and error, allow style/info notes.
-      const result = spawnSync(
-        'shellcheck',
-        ['-s', 'sh', '-S', 'warning', asFile(generateService(c))],
-        { encoding: 'utf8' }
-      )
+      const result = spawnSync('shellcheck', ['-s', 'sh', '-S', 'warning', '-'], {
+        input: generateService(c),
+        encoding: 'utf8'
+      })
       expect(result.stdout, `shellcheck failed for ${JSON.stringify(c)}`).toBe('')
       expect(result.status).toBe(0)
     }
