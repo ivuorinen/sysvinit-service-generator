@@ -108,7 +108,7 @@ describe('UI', () => {
 
   it.each([
     ['service', 'my app'],
-    ['username', 'my user'],
+    ['username', '-x'],
     ['command', '   ']
   ] as const)('flags an invalid %s and hides the outputs until it is fixed', async (id, bad) => {
     await load()

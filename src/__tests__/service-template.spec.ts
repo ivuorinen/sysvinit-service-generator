@@ -77,13 +77,18 @@ describe('description sanitising', () => {
 })
 
 describe('name validation', () => {
-  it.each(['my-service', 'svc_1', 'a.b', 'X9'])('accepts %s', (name: string) => {
+  it.each(['my-service', 'svc_1', 'a.b', 'X9', '_x', 'a..'])('accepts %s', (name: string) => {
     expect(SAFE_NAME.test(name)).toBe(true)
   })
 
-  it.each(['', 'my service', 'x;y', 'a/b', '$x', 'a`b', 'a|b'])('rejects %j', (name: string) => {
-    expect(SAFE_NAME.test(name)).toBe(false)
-  })
+  // '..' made the save path /etc/init.d/.. (that is, /etc); a leading '-' is
+  // parsed as an option by update-rc.d and chown.
+  it.each(['', 'my service', 'x;y', 'a/b', '$x', 'a`b', 'a|b', '.', '..', '.x', '-f', '-'])(
+    'rejects %j',
+    (name: string) => {
+      expect(SAFE_NAME.test(name)).toBe(false)
+    }
+  )
 })
 
 describe('field validity', () => {
@@ -94,7 +99,7 @@ describe('field validity', () => {
       username: true,
       command: true
     })
-    expect(fieldValidity(opts({ username: 'my user' }))).toEqual({
+    expect(fieldValidity(opts({ username: '-x' }))).toEqual({
       service: true,
       username: false,
       command: true
@@ -248,7 +253,7 @@ describe('generator boundary validation', () => {
   // The generators are the trust boundary, not the UI: a direct caller must not
   // be able to reach the unquotable <NAME> contexts (LSB comment, logrotate
   // stanza path) with arbitrary input.
-  const bad = ['x; touch /tmp/PWNED #', 'my app', 'a/b', '$(id)', 'a`b', '']
+  const bad = ['x; touch /tmp/PWNED #', 'my app', 'a/b', '$(id)', 'a`b', '', '..', '-f']
 
   it.each(bad)('generateService rejects service name %j', (service: string) => {
     expect(() => generateService(opts({ service }))).toThrow(/Invalid service name/)

@@ -9,9 +9,11 @@
  *
  * These values reach unquoted path contexts in the generated script
  * (`/run/$NAME.pid`, `update-rc.d`), so the set is restricted rather than
- * relying on quoting alone.
+ * relying on quoting alone. The first character may not be `.` or `-`: `..`
+ * made the save path `/etc/init.d/..` (that is, `/etc`), and a leading dash is
+ * parsed as an option by `update-rc.d` and `chown`.
  */
-export const SAFE_NAME = /^[A-Za-z0-9_.-]+$/
+export const SAFE_NAME = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/
 
 /**
  * Quote a value for POSIX sh: wrap in single quotes, closing and reopening the

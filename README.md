@@ -15,8 +15,8 @@ app shows the exact destination path above each output.
 6. Optionally save the "Logrotate" output to `/etc/logrotate.d/<service-name>`.
 
 The service name and username accept only letters, digits, dot, dash and
-underscore, because both are interpolated into shell and path contexts in the
-generated script.
+underscore, and may not start with a dot or dash, because both are interpolated
+into shell and path contexts in the generated script.
 
 ## Development
 
