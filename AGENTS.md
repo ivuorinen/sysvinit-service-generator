@@ -2,15 +2,15 @@
 
 ## Project overview
 
-This repo hosts a small Vue 3 + TypeScript web app built with Vite. The source
-lives in `src/` and is served via `index.html`. Static assets are under
-`public/`. Config files include `vite.config.ts` for build settings,
-`tsconfig.*.json` for TypeScript, `eslint.config.mjs` for lint rules and
-`.stylelintrc.json` for CSS.
+This repo hosts a small TypeScript web app built with Vite, with no runtime
+dependencies. `index.html` holds the markup, `src/main.ts` wires it to the
+generator, and static assets are under `public/`. Config files are
+`vite.config.ts` (build and Vitest), `tsconfig.json`, `eslint.config.mjs` and
+`.stylelintrc.json`.
 
 The app generates a sysvinit service script that users run as root. The
-generation logic lives in `src/service-template.ts`, deliberately free of Vue so
-it can be unit-tested; `src/App.vue` is only the UI around it.
+generation logic lives in `src/service-template.ts`, deliberately free of the
+DOM so it can be unit-tested; `src/main.ts` is only the UI around it.
 
 ## Guidelines
 
@@ -18,12 +18,13 @@ it can be unit-tested; `src/App.vue` is only the UI around it.
   format for PR titles.
 - Use **npm** for installing packages. `package-lock.json` is the committed
   lockfile and every CI job installs from it with `npm ci`.
-- Run linting, type checks and tests before committing any code changes.
+- Run `npm run check` before committing any code change; it runs lint, type
+  check, formatting check and tests. Setup and the individual commands are in
+  `CONTRIBUTING.md`.
 - Skip linting and type checks when editing only documentation or comments.
 - Follow the style rules defined by Prettier and ESLint. Prettier settings: no
-  semicolons, single quotes, width 100, two spaces.
-  `@vue/eslint-config-prettier` is wired into `eslint.config.mjs`, so ESLint
-  reports formatting violations.
+  semicolons, single quotes, width 100, two spaces. Prettier is not wired into
+  ESLint; `npm run format:check` enforces it.
 - Markdown prose is hard-wrapped at 80 by Prettier (`proseWrap: always` plus a
   `printWidth` override for `*.md`), which is what keeps markdownlint's MD013
   satisfied at its default. Do not hand-wrap; run `npm run format`.
@@ -38,51 +39,41 @@ it can be unit-tested; `src/App.vue` is only the UI around it.
 
 - Interpolate user input through `shq()` (POSIX single-quoting), never raw.
 - Validation belongs at the generator boundary, not in the UI.
-  `generateService()` and `generateLogRotate()` call `assertValidOptions()` and
-  throw on a service name or username outside `SAFE_NAME`, because the bare
-  `<NAME>` form also reaches contexts that cannot be quoted at all (the LSB
-  header comment, the logrotate stanza path). `fill()` is intentionally not
-  exported so the check cannot be bypassed.
+  `generateService()` and `generateLogRotate()` throw on a service name or
+  username outside `SAFE_NAME`, because the bare `<NAME>` form also reaches
+  contexts that cannot be quoted at all (the LSB header comment, the logrotate
+  stanza path). `fieldValidity()` is the only definition of the rules: the UI
+  reads it, so never re-implement a rule in `src/main.ts` or as an HTML
+  `pattern`. `fill()` is intentionally not exported so the check cannot be
+  bypassed.
 - Every generated variant must pass `shellcheck -s sh -S warning` and `dash -n`.
   Both are mandatory in CI; locally a missing binary skips the check and warns
   that validation is incomplete. Add a case to
   `src/__tests__/service-template.spec.ts` when you add an input.
 
-## Linting, formatting and tests
+## Tests and coverage
 
-```bash
-npm ci             # once
-prek install       # once, installs the pre-commit hooks
-
-npm run lint       # ESLint, report only
-npm run lint:fix   # ESLint with autofix
-npm run lint:css   # Stylelint, report only
-npm run lint:css:fix # Stylelint with autofix
-npm run type-check # type-checks with vue-tsc
-npm test           # Vitest, incl. shellcheck/dash validation of the output
-
-npm run format     # formats using Prettier
-npm run check      # everything the PR gate runs
-```
+`npm test` runs Vitest with coverage and fails below 100% lines, branches,
+functions and statements over `src/**/*.ts` (`thresholds` in `vite.config.ts`).
+Add tests for new code; do not add coverage exclusions. The UI test
+(`src/__tests__/main.spec.ts`) runs under happy-dom and loads the real
+`index.html`, so markup and code cannot drift apart unnoticed.
 
 Pre-commit hooks are managed with [prek](https://github.com/j178/prek), a
 drop-in pre-commit runner (`pre-commit` works too). `.pre-commit-config.yaml`
-runs Prettier, ESLint, Stylelint, actionlint, zizmor and the shell-validation
-tests, so the lint failures this repo has hit before cannot reach a commit
+runs Prettier, ESLint, Stylelint, actionlint, zizmor and the tests with
+coverage, so the lint failures this repo has hit before cannot reach a commit
 again.
 
 Config traps, all of which have bitten this repo:
 
 - Do not add a `parserOptions.project` block to `eslint.config.mjs`. It
-  conflicts with the `projectService` that `@vue/eslint-config-typescript`
-  enables and turns every file into a fatal parse error — ESLint then reports
-  errors while linting nothing.
-- Every tsconfig must set `noEmit`. A referenced project without it makes
-  `npm run type-check` emit compiled `.js` next to the sources.
+  conflicts with the `projectService` the config enables and turns every file
+  into a fatal parse error — ESLint then reports errors while linting nothing.
+- `tsconfig.json` must keep `noEmit`. `npm run type-check` is plain `tsc`, so
+  without it every `.ts` file is compiled to a `.js` next to its source.
 - Do not reintroduce `baseUrl`. It is deprecated in TypeScript 6 and stops
-  working in 7; `type-check` fails with TS5101 while it is present. The `@/*`
-  alias in `tsconfig.app.json` (mirrored in `vite.config.ts`) needs only
-  `paths`, whose entries resolve relative to the tsconfig since TS 4.1.
-- Keep the tsconfig files comment-free. TypeScript accepts JSONC, but the
+  working in 7; `type-check` fails with TS5101 while it is present.
+- Keep the tsconfig file comment-free. TypeScript accepts JSONC, but the
   `check-json` pre-commit hook and MegaLinter's `jsonlint` parse strict JSON and
   will reject `//` comments. Record the reasoning here instead.

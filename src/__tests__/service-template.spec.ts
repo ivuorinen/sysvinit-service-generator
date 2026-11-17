@@ -1,11 +1,12 @@
-import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import {
   SAFE_NAME,
+  fieldValidity,
   generateLogRotate,
   generateService,
   oneLine,
@@ -24,13 +25,6 @@ const opts = (overrides: Partial<ServiceOptions> = {}): ServiceOptions => ({
   ...defaults,
   ...overrides
 })
-
-/** Write a generated script to a temp file and return its path. */
-const asFile = (script: string): string => {
-  const path = join(mkdtempSync(join(tmpdir(), 'svc-')), 'init.sh')
-  writeFileSync(path, script)
-  return path
-}
 
 const isPresent = (bin: string): boolean =>
   spawnSync('sh', ['-c', `command -v ${bin}`]).status === 0
@@ -76,12 +70,42 @@ describe('description sanitising', () => {
 })
 
 describe('name validation', () => {
-  it.each(['my-service', 'svc_1', 'a.b', 'X9'])('accepts %s', (name: string) => {
+  it.each(['my-service', 'svc_1', 'a.b', 'X9', '_x', 'a..'])('accepts %s', (name: string) => {
     expect(SAFE_NAME.test(name)).toBe(true)
   })
 
-  it.each(['', 'my service', 'x;y', 'a/b', '$x', 'a`b', 'a|b'])('rejects %j', (name: string) => {
-    expect(SAFE_NAME.test(name)).toBe(false)
+  // '..' made the save path /etc/init.d/.. (that is, /etc); a leading '-' is
+  // parsed as an option by update-rc.d and chown.
+  it.each(['', 'my service', 'x;y', 'a/b', '$x', 'a`b', 'a|b', '.', '..', '.x', '-f', '-'])(
+    'rejects %j',
+    (name: string) => {
+      expect(SAFE_NAME.test(name)).toBe(false)
+    }
+  )
+})
+
+describe('field validity', () => {
+  it('reports every checked field independently', () => {
+    expect(fieldValidity(opts())).toEqual({ service: true, username: true, command: true })
+    expect(fieldValidity(opts({ service: 'a b' }))).toEqual({
+      service: false,
+      username: true,
+      command: true
+    })
+    expect(fieldValidity(opts({ username: '-x' }))).toEqual({
+      service: true,
+      username: false,
+      command: true
+    })
+    expect(fieldValidity(opts({ command: '  ' }))).toEqual({
+      service: true,
+      username: true,
+      command: false
+    })
+  })
+
+  it('does not check the free-text description', () => {
+    expect(fieldValidity(opts({ description: '' }))).not.toHaveProperty('description')
   })
 })
 
@@ -137,15 +161,129 @@ describe('generated service script', () => {
   it('sets a non-zero exit status for an unknown action', () => {
     // LSB reserves 2 for invalid or excess arguments; exiting 0 would hide
     // usage errors from callers and monitoring.
-    expect(generateService(opts())).toMatch(/echo "Usage: \$0 [^"]+"\n\s+#[^\n]*\n\s+exit 2\nesac/)
+    expect(generateService(opts())).toMatch(
+      /echo "Usage: \$0 [^"]+" >&2\n\s+#[^\n]*\n\s+exit 2\nesac/
+    )
+  })
+
+  it('reports a failed start on stderr', () => {
+    const script = generateService(opts())
+    expect(script).toContain('echo "Error! Could not start $NAME!" >&2')
+    expect(script).not.toContain("echo ''")
+  })
+
+  it('stop waits for the process to exit before removing the pidfile', () => {
+    // Regression guard: `kill -15 … && rm -f "$PIDFILE"` returned while a
+    // draining daemon still held its port, so restart's start() raced it.
+    const script = generateService(opts())
+    const stop = script.slice(script.indexOf('stop() {'), script.indexOf('uninstall() {'))
+    const kill = stop.indexOf('kill -15 "$PID"')
+    const wait = stop.indexOf('while kill -0 "$PID"')
+    // The first removal, so an early `rm` beside the kill is caught too.
+    const remove = stop.indexOf('rm -f "$PIDFILE"')
+    expect(kill).toBeGreaterThan(-1)
+    expect(wait).toBeGreaterThan(kill)
+    expect(remove).toBeGreaterThan(stop.indexOf('done', wait))
+  })
+
+  it('does not start or uninstall after a failed stop', () => {
+    const script = generateService(opts())
+    expect(script).toMatch(/restart\)\n\s+stop && start\n/)
+    expect(script).toContain('stop || return 1')
+  })
+})
+
+describe('generated script exit codes follow LSB', () => {
+  // The script hardcodes /run/$NAME.pid. Sourcing its functions without the
+  // trailing `case` dispatcher and repointing PIDFILE runs the real start, stop
+  // and status code unprivileged, against a pidfile this test controls.
+  const dir = mkdtempSync(join(tmpdir(), 'svc-'))
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  const script = generateService(opts())
+  const functions = script.slice(0, script.indexOf('case "$1" in'))
+  const pidfile = join(dir, 'svc.pid')
+  /** Above Linux's pid_max ceiling (2^22), so never a live process. */
+  const DEAD = 99999999
+
+  /** Run one shell command with PIDFILE holding `pid`, or absent without one. */
+  const run = (command: string, pid?: number) => {
+    rmSync(pidfile, { force: true })
+    if (pid !== undefined) writeFileSync(pidfile, `${pid}\n`)
+    return spawnSync('dash', ['-c', `${functions}\nPIDFILE=${shq(pidfile)}\n${command}`], {
+      encoding: 'utf8'
+    })
+  }
+
+  it.runIf(validatorRuns('dash'))('status: 0 running, 1 dead with pidfile, 3 not running', () => {
+    expect(run('status', process.pid).status).toBe(0)
+    expect(run('status', DEAD).status).toBe(1)
+    expect(run('status').status).toBe(3)
+  })
+
+  it.runIf(validatorRuns('dash'))('start on a running service succeeds', () => {
+    // Returns before touching /var/log, so it needs no privileges.
+    const result = run('start', process.pid)
+    expect(result.stderr).toContain('Service already running')
+    expect(result.status).toBe(0)
+  })
+
+  it.runIf(validatorRuns('dash'))('stop on a stopped service succeeds', () => {
+    const result = run('stop')
+    expect(result.stderr).toContain('Service not running')
+    expect(result.status).toBe(0)
+  })
+
+  it.runIf(validatorRuns('dash'))(
+    'stop keeps a pidfile that a start rewrote during the wait',
+    () => {
+      // A start that runs while stop waits writes its own PID, and removing that
+      // pidfile orphaned the new instance. Two files order the run instead of
+      // delays, which a loaded runner can outlast: the target creates `ready`
+      // once its TERM trap is installed, so stop never signals it unprotected,
+      // and after TERM it stays alive until `go` exists, so stop always reaches
+      // its wait loop. There the overridden `sleep` stands in for the concurrent
+      // start: it rewrites the pidfile and only then creates `go`. Every loop is
+      // bounded, so a failing run leaves no process behind.
+      const ready = join(dir, 'ready')
+      const go = join(dir, 'go')
+      rmSync(ready, { force: true })
+      rmSync(go, { force: true })
+      const target = [
+        `trap 'j=0; while [ ! -e "$GO" ] && [ $j -lt 100 ]; do sleep 0.05; j=$((j + 1)); done; exit 0' TERM`,
+        ': > "$READY"',
+        'i=0; while [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done'
+      ].join('\n')
+      const result = run(
+        [
+          // Launched from a subshell that exits at once, so init reaps the target
+          // when it dies; a child of this shell would stay a zombie that kill -0
+          // still finds.
+          `(READY=${shq(ready)} GO=${shq(go)} sh -c ${shq(target)} >/dev/null 2>&1 & echo $! > "$PIDFILE")`,
+          `n=0; while [ ! -e ${shq(ready)} ] && [ $n -lt 500 ]; do sleep 0.01; n=$((n + 1)); done`,
+          `sleep() { echo ${process.pid} > "$PIDFILE"; : > ${shq(go)}; command sleep "$@"; }`,
+          'stop'
+        ].join('\n')
+      )
+      expect(result.stderr).toContain('Service stopped')
+      expect(result.status).toBe(0)
+      expect(readFileSync(pidfile, 'utf8').trim()).toBe(String(process.pid))
+    }
+  )
+
+  it.runIf(validatorRuns('dash'))('an unknown action prints usage on stderr and exits 2', () => {
+    const result = spawnSync('dash', ['-s', 'bogus'], { input: script, encoding: 'utf8' })
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toMatch(/^Usage: /)
+    expect(result.status).toBe(2)
   })
 })
 
 describe('generator boundary validation', () => {
-  // The generators are the trust boundary, not App.vue: a direct caller must not
+  // The generators are the trust boundary, not the UI: a direct caller must not
   // be able to reach the unquotable <NAME> contexts (LSB comment, logrotate
   // stanza path) with arbitrary input.
-  const bad = ['x; touch /tmp/PWNED #', 'my app', 'a/b', '$(id)', 'a`b', '']
+  const bad = ['x; touch /tmp/PWNED #', 'my app', 'a/b', '$(id)', 'a`b', '', '..', '-f']
 
   it.each(bad)('generateService rejects service name %j', (service: string) => {
     expect(() => generateService(opts({ service }))).toThrow(/Invalid service name/)
@@ -236,6 +374,12 @@ describe('generated logrotate config', () => {
   it('targets the service log', () => {
     expect(generateLogRotate(opts())).toContain('/var/log/my-service.log {')
   })
+
+  it('truncates in place, because the daemon keeps its log descriptor open', () => {
+    // Without copytruncate the daemon kept appending to the renamed .1 file,
+    // which delaycompress later unlinks: output went to a deleted inode.
+    expect(generateLogRotate(opts())).toMatch(/^ {4}copytruncate$/m)
+  })
 })
 
 // These are the checks that would have caught the $NAME, &> and non-POSIX
@@ -248,10 +392,11 @@ describe('shell validation of the generated script', () => {
     opts({ description: 'Line one\n# hijacked' })
   ]
 
+  // Both validators read the script from stdin, so no temp files are left behind.
   it.runIf(validatorRuns('dash'))('parses under dash', () => {
     expect(isPresent('dash'), 'dash is required to validate the generated script').toBe(true)
     for (const c of cases) {
-      const result = spawnSync('dash', ['-n', asFile(generateService(c))], { encoding: 'utf8' })
+      const result = spawnSync('dash', ['-n'], { input: generateService(c), encoding: 'utf8' })
       expect(result.stderr, `dash -n failed for ${JSON.stringify(c)}`).toBe('')
       expect(result.status).toBe(0)
     }
@@ -263,17 +408,12 @@ describe('shell validation of the generated script', () => {
     )
     for (const c of cases) {
       // -S warning: fail on warning and error, allow style/info notes.
-      const result = spawnSync(
-        'shellcheck',
-        ['-s', 'sh', '-S', 'warning', asFile(generateService(c))],
-        { encoding: 'utf8' }
-      )
+      const result = spawnSync('shellcheck', ['-s', 'sh', '-S', 'warning', '-'], {
+        input: generateService(c),
+        encoding: 'utf8'
+      })
       expect(result.stdout, `shellcheck failed for ${JSON.stringify(c)}`).toBe('')
       expect(result.status).toBe(0)
     }
-  })
-
-  it.runIf(validatorRuns('shellcheck'))('records the shellcheck version used', () => {
-    expect(execFileSync('shellcheck', ['--version'], { encoding: 'utf8' })).toContain('ShellCheck')
   })
 })

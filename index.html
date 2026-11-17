@@ -14,8 +14,91 @@
   </head>
 
   <body>
-    <!-- id is Vue's mount target (src/main.ts); the class is what CSS styles. -->
-    <div id="app" class="app"></div>
+    <!-- Static markup; src/main.ts looks every id up and fills the outputs. -->
+    <div class="app">
+      <header>
+        <h1 class="accent">sysvinit service generator</h1>
+
+        <label>
+          Service name:
+          <input id="service" type="text" value="my-service" aria-describedby="service-error" />
+          <small id="service-error" class="error" hidden>
+            Use letters, digits, dot, dash or underscore, not starting with a dot or dash.
+          </small>
+        </label>
+
+        <label>
+          Description:
+          <input id="description" type="text" value="This command does something" />
+        </label>
+
+        <label>
+          Run as user:
+          <input id="username" type="text" value="root" aria-describedby="username-error" />
+          <small id="username-error" class="error" hidden>
+            Use letters, digits, dot, dash or underscore, not starting with a dot or dash.
+          </small>
+        </label>
+
+        <label>
+          Command:
+          <input
+            id="command"
+            type="text"
+            value="/usr/local/bin/command"
+            aria-describedby="command-error"
+          />
+          <small id="command-error" class="error" hidden>Command cannot be empty.</small>
+        </label>
+      </header>
+
+      <main>
+        <p id="summary" class="error" role="status"></p>
+
+        <div id="output">
+          <h2 id="service-label">Generated service script:</h2>
+          <div id="service-path-note">Save as: <code id="service-path"></code></div>
+          <textarea
+            id="service-script"
+            class="tall"
+            readonly
+            aria-labelledby="service-label"
+            aria-describedby="service-path-note"
+          ></textarea>
+          <button id="copy-service" type="button">Copy service script</button>
+
+          <details>
+            <summary id="logrotate-label">Logrotate</summary>
+            <div id="logrotate-path-note">Save as: <code id="logrotate-path"></code></div>
+            <textarea
+              id="logrotate"
+              class="just-right noresize"
+              readonly
+              aria-labelledby="logrotate-label"
+              aria-describedby="logrotate-path-note"
+            ></textarea>
+            <button id="copy-logrotate" type="button">Copy logrotate config</button>
+          </details>
+
+          <details>
+            <summary id="shell-label">Shell commands to run</summary>
+            <textarea
+              id="shell-commands"
+              class="just-right noresize"
+              readonly
+              aria-labelledby="shell-label"
+            ></textarea>
+            <button id="copy-shell" type="button">Copy shell commands</button>
+          </details>
+        </div>
+      </main>
+
+      <footer>
+        <p>
+          Created by <a href="https://github.com/ivuorinen">@ivuorinen</a> from Tampere, Finland
+        </p>
+      </footer>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

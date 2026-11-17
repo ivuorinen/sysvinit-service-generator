@@ -1,6 +1,6 @@
 // Generation of the sysvinit service script and its logrotate config.
 //
-// Kept free of Vue so it can be tested as a pure function: the output is a
+// Kept free of the DOM so it can be tested as a pure function: the output is a
 // program that runs as root, so it is validated by unit tests plus `shellcheck`
 // and `dash -n` (see src/__tests__/service-template.spec.ts).
 
@@ -9,10 +9,11 @@
  *
  * These values reach unquoted path contexts in the generated script
  * (`/run/$NAME.pid`, `update-rc.d`), so the set is restricted rather than
- * relying on quoting alone. Keep in sync with the `pattern` attribute on the
- * corresponding inputs in App.vue.
+ * relying on quoting alone. The first character may not be `.` or `-`: `..`
+ * made the save path `/etc/init.d/..` (that is, `/etc`), and a leading dash is
+ * parsed as an option by `update-rc.d` and `chown`.
  */
-export const SAFE_NAME = /^[A-Za-z0-9_.-]+$/
+export const SAFE_NAME = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/
 
 /**
  * Quote a value for POSIX sh: wrap in single quotes, closing and reopening the
@@ -48,10 +49,13 @@ RUNAS=<USERNAME_Q>
 PIDFILE=/run/$NAME.pid
 LOGFILE=/var/log/$NAME.log
 
+# Exit codes follow LSB: start on a running service and stop on a stopped one
+# succeed; status returns 0 running, 1 dead with a pidfile, 3 not running.
+
 start() {
   if [ -f "$PIDFILE" ] && [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo "Service already running" >&2
-    return 1
+    return 0
   fi
   echo 'Starting service...' >&2
 
@@ -70,8 +74,7 @@ start() {
   if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
     echo "$NAME is now running, the PID is $PID"
   else
-    echo ''
-    echo "Error! Could not start $NAME!"
+    echo "Error! Could not start $NAME!" >&2
     rm -f "$PIDFILE"
     return 1
   fi
@@ -80,10 +83,28 @@ start() {
 stop() {
   if [ ! -f "$PIDFILE" ] || ! kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo 'Service not running' >&2
-    return 1
+    return 0
   fi
+  PID="$(cat "$PIDFILE")"
   echo 'Stopping service...' >&2
-  kill -15 "$(cat "$PIDFILE")" && rm -f "$PIDFILE"
+  kill -15 "$PID"
+
+  # Wait for the exit: removing the pidfile at once let restart start a second
+  # instance while the first still held its port.
+  WAITED=0
+  while kill -0 "$PID" 2>/dev/null; do
+    if [ "$WAITED" -ge 10 ]; then
+      echo "Error! $NAME did not stop within 10 seconds" >&2
+      return 1
+    fi
+    WAITED=$((WAITED + 1))
+    sleep 1
+  done
+  # A start that ran during the wait has written its own PID: removing that
+  # pidfile would orphan the new instance. Remove only the stopped one's.
+  if [ "$(cat "$PIDFILE" 2>/dev/null)" = "$PID" ]; then
+    rm -f "$PIDFILE"
+  fi
   echo 'Service stopped' >&2
 }
 
@@ -91,7 +112,7 @@ uninstall() {
   printf '%s' "Are you really sure you want to uninstall this service? That cannot be undone. [yes|No] "
   read -r SURE
   if [ "$SURE" = "yes" ]; then
-    stop
+    stop || return 1
     rm -f "$PIDFILE"
     echo "Notice: log file was not removed: $LOGFILE" >&2
     update-rc.d -f "$NAME" remove
@@ -109,9 +130,11 @@ status() {
       echo "Running, the PID is $PID"
     else
       printf "%s\\n" "The process appears to be dead but pidfile still exists"
+      return 1
     fi
   else
     printf "%s\\n" "Service not running"
+    return 3
   fi
 }
 
@@ -129,11 +152,10 @@ case "$1" in
     uninstall
     ;;
   restart)
-    stop
-    start
+    stop && start
     ;;
   *)
-    echo "Usage: $0 {start|stop|status|restart|uninstall}"
+    echo "Usage: $0 {start|stop|status|restart|uninstall}" >&2
     # LSB reserves exit code 2 for invalid or excess arguments.
     exit 2
 esac
@@ -146,7 +168,24 @@ const logRotateString = `/var/log/<NAME>.log {
     notifempty
     compress
     delaycompress
+    copytruncate
 }`
+
+/**
+ * Per-field validity, the single definition of what the generators accept.
+ *
+ * The UI marks fields from this rather than re-implementing the rules, so the
+ * form cannot accept input that `generateService()` then throws on. The
+ * description is absent on purpose: it is free text, sanitised by `oneLine()`
+ * rather than rejected.
+ */
+export const fieldValidity = (
+  options: ServiceOptions
+): Record<'service' | 'username' | 'command', boolean> => ({
+  service: SAFE_NAME.test(options.service),
+  username: SAFE_NAME.test(options.username),
+  command: options.command.trim() !== ''
+})
 
 /**
  * Reject options that cannot be safely interpolated.
@@ -154,16 +193,17 @@ const logRotateString = `/var/log/<NAME>.log {
  * The generators are the trust boundary, not the UI. `shq()` protects the shell
  * assignments, but the bare `<NAME>` form also reaches contexts that cannot be
  * quoted at all — the LSB header comment and the logrotate stanza path — so a
- * form-level check in App.vue is not sufficient for a direct caller.
+ * check in the UI alone would not protect a direct caller.
  */
-export const assertValidOptions = (options: ServiceOptions): void => {
-  if (!SAFE_NAME.test(options.service)) {
+const assertValidOptions = (options: ServiceOptions): void => {
+  const valid = fieldValidity(options)
+  if (!valid.service) {
     throw new Error(`Invalid service name: ${JSON.stringify(options.service)}`)
   }
-  if (!SAFE_NAME.test(options.username)) {
+  if (!valid.username) {
     throw new Error(`Invalid username: ${JSON.stringify(options.username)}`)
   }
-  if (options.command.trim() === '') {
+  if (!valid.command) {
     throw new Error('Command cannot be empty')
   }
 }
@@ -183,8 +223,7 @@ export const assertValidOptions = (options: ServiceOptions): void => {
  *  - **One pass.** Chained `.replace()` calls re-scan text that an earlier call
  *    substituted, so a command containing the literal `<NAME>` was rewritten
  *    into the service name by the later pass. A single regex with an
- *    alternation never re-examines what it just inserted. `NAME_Q` precedes
- *    `NAME` in the alternation so the longer key wins.
+ *    alternation never re-examines what it just inserted.
  *  - **Callback, not string.** In a string replacement `$$`, `$&`, `` $` ``,
  *    `$'` and `$1` are special, so `--pid $$` (the shell's PID, entirely
  *    ordinary) emitted a single `$`, and `$&` emitted the placeholder itself
