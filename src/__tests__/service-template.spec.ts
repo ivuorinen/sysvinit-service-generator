@@ -238,18 +238,30 @@ describe('generated script exit codes follow LSB', () => {
     'stop keeps a pidfile that a start rewrote during the wait',
     () => {
       // A start that runs while stop waits writes its own PID, and removing that
-      // pidfile orphaned the new instance. The target outlives SIGTERM by 0.3s so
-      // stop enters its wait loop, where the overridden `sleep` stands in for the
-      // concurrent start. The target's own loop ends within 5s, so a failing run
-      // leaves no process behind.
-      const target = `trap 'sleep 0.3; exit 0' TERM; i=0; while [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done`
+      // pidfile orphaned the new instance. Two files order the run instead of
+      // delays, which a loaded runner can outlast: the target creates `ready`
+      // once its TERM trap is installed, so stop never signals it unprotected,
+      // and after TERM it stays alive until `go` exists, so stop always reaches
+      // its wait loop. There the overridden `sleep` stands in for the concurrent
+      // start: it rewrites the pidfile and only then creates `go`. Every loop is
+      // bounded, so a failing run leaves no process behind.
+      const ready = join(dir, 'ready')
+      const go = join(dir, 'go')
+      rmSync(ready, { force: true })
+      rmSync(go, { force: true })
+      const target = [
+        `trap 'j=0; while [ ! -e "$GO" ] && [ $j -lt 100 ]; do sleep 0.05; j=$((j + 1)); done; exit 0' TERM`,
+        ': > "$READY"',
+        'i=0; while [ $i -lt 100 ]; do sleep 0.05; i=$((i + 1)); done'
+      ].join('\n')
       const result = run(
         [
           // Launched from a subshell that exits at once, so init reaps the target
           // when it dies; a child of this shell would stay a zombie that kill -0
           // still finds.
-          `(sh -c ${shq(target)} >/dev/null 2>&1 & echo $! > "$PIDFILE")`,
-          `sleep() { echo ${process.pid} > "$PIDFILE"; command sleep "$@"; }`,
+          `(READY=${shq(ready)} GO=${shq(go)} sh -c ${shq(target)} >/dev/null 2>&1 & echo $! > "$PIDFILE")`,
+          `n=0; while [ ! -e ${shq(ready)} ] && [ $n -lt 500 ]; do sleep 0.01; n=$((n + 1)); done`,
+          `sleep() { echo ${process.pid} > "$PIDFILE"; : > ${shq(go)}; command sleep "$@"; }`,
           'stop'
         ].join('\n')
       )
