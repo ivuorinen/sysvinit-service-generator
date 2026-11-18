@@ -29,7 +29,7 @@ const opts = (overrides: Partial<ServiceOptions> = {}): ServiceOptions => ({
 const isPresent = (bin: string): boolean =>
   spawnSync('sh', ['-c', `command -v ${bin}`]).status === 0
 
-const CI = process.env.CI === 'true' || process.env.CI === '1'
+const CI = process.env['CI'] === 'true' || process.env['CI'] === '1'
 
 /**
  * Decide whether a shell-validator test runs.

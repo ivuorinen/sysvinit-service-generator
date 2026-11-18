@@ -232,14 +232,16 @@ const assertValidOptions = (options: ServiceOptions): void => {
 const PLACEHOLDER = /<(NAME_Q|COMMAND_Q|USERNAME_Q|NAME|DESCRIPTION)>/g
 
 const fill = (template: string, options: ServiceOptions): string => {
-  const values: Record<string, string> = {
+  const values = {
     NAME_Q: shq(options.service),
     COMMAND_Q: shq(options.command),
     USERNAME_Q: shq(options.username),
     NAME: options.service,
     DESCRIPTION: oneLine(options.description)
   }
-  return template.replace(PLACEHOLDER, (_match, key: string) => values[key])
+  // PLACEHOLDER's alternation captures exactly these keys, so `key` is one of
+  // them and the lookup always finds a value.
+  return template.replace(PLACEHOLDER, (_match, key: keyof typeof values) => values[key])
 }
 
 export const generateService = (options: ServiceOptions): string => {
