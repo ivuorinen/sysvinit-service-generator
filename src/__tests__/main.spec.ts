@@ -142,6 +142,8 @@ describe('UI', () => {
     await load()
     get('tab-logrotate', HTMLButtonElement).click()
     type('service', 'my app')
+    // The outputs must really have been hidden, or keeping the tab proves nothing.
+    expect(get('output', HTMLElement).hidden).toBe(true)
     type('service', 'my-service')
     expect(get('tab-logrotate', HTMLButtonElement).getAttribute('aria-selected')).toBe('true')
     expect(get('panel-logrotate', HTMLElement).hidden).toBe(false)

@@ -60,6 +60,12 @@ Add tests for new code; do not add coverage exclusions. The UI test
 (`src/__tests__/main.spec.ts`) runs under happy-dom and loads the real
 `index.html`, so markup and code cannot drift apart unnoticed.
 
+Insert test markup through a `<template>` (`template.innerHTML = html`, then
+`replaceChildren(template.content)`), never with `innerHTML` on a connected
+element. happy-dom's `innerHTML` connects each element before parsing its
+children, which no browser does, so a custom element such as `<tab-group>` finds
+no children and throws. Both UI specs already do this.
+
 Pre-commit hooks are managed with [prek](https://github.com/j178/prek), a
 drop-in pre-commit runner (`pre-commit` works too). `.pre-commit-config.yaml`
 runs Prettier, ESLint, Stylelint, actionlint, zizmor and the tests with

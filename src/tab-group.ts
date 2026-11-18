@@ -75,6 +75,8 @@ export class TabGroup extends HTMLElement {
       // pattern makes the panel itself the next Tab stop after the tab list.
       panel.tabIndex = 0
     })
+    // A moved group is connected again, so it returns to its first tab. This
+    // page never moves it.
     this.select(0)
   }
 
@@ -111,11 +113,12 @@ export class TabGroup extends HTMLElement {
     // Keys pressed inside a panel (Home in a textarea) bubble up to here too;
     // only a focused tab is ours to handle. Modified keys are browser and
     // assistive-technology shortcuts, such as Alt+Left for back.
-    const index = this.tabs.indexOf(event.target as HTMLButtonElement)
+    const index = this.tabs.findIndex((tab) => tab === event.target)
     if (index < 0 || event.altKey || event.ctrlKey || event.metaKey) return
 
     const count = this.tabs.length
-    const moves: Record<string, number> = {
+    // Partial: a key with no move looks up `undefined`, and the type says so.
+    const moves: Partial<Record<string, number>> = {
       ArrowLeft: (index - 1 + count) % count,
       ArrowRight: (index + 1) % count,
       Home: 0,
@@ -132,3 +135,11 @@ export class TabGroup extends HTMLElement {
 // main.ts is evaluated again in tests (vi.resetModules), which re-runs this
 // module; a second define() of the same name throws.
 if (!customElements.get('tab-group')) customElements.define('tab-group', TabGroup)
+
+// Tells TypeScript what define() told the browser, so a tag-name lookup such
+// as document.querySelector('tab-group') is typed TabGroup, not Element.
+declare global {
+  interface HTMLElementTagNameMap {
+    'tab-group': TabGroup
+  }
+}

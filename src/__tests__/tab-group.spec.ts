@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import '../tab-group'
+import { TabGroup } from '../tab-group'
 
 /** Three tabs; the second's label is wrapped, as an icon or emphasis would be. */
 const fixture = `
@@ -68,6 +68,15 @@ describe('<tab-group>', () => {
       ['tabpanel', 't2', '0'],
       ['tabpanel', 't3', '0']
     ])
+  })
+
+  it('upgrades <tab-group> to TabGroup, and a tag-name query is typed so', () => {
+    mount()
+    const group = document.querySelector('tab-group')
+    expect(group).toBeInstanceOf(TabGroup)
+    // Checked by tsc (npm run type-check), not at run time: the
+    // HTMLElementTagNameMap entry in tab-group.ts gives the query this type.
+    expectTypeOf(group).toEqualTypeOf<TabGroup | null>()
   })
 
   it('selects the first tab on connect without moving focus', () => {
