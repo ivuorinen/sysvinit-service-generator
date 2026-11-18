@@ -84,3 +84,10 @@ Config traps, all of which have bitten this repo:
 - Keep the tsconfig file comment-free. TypeScript accepts JSONC, but the
   `check-json` pre-commit hook and MegaLinter's `jsonlint` parse strict JSON and
   will reject `//` comments. Record the reasoning here instead.
+- `tsconfig.json` turns on every TypeScript 6 strictness option beyond `strict`,
+  which TS 6 enables by default along with `noUncheckedSideEffectImports`. Two
+  stay short of their strictest. `skipLibCheck` is `true` because happy-dom 21's
+  declarations import `UnderlyingDefaultSource` from `node:stream/web`, which
+  `@types/node` exports only from version 25, and this project runs Node 24; try
+  `false` again after either upgrades. `isolatedDeclarations` is off because it
+  requires declaration output (TS5069), which this app does not produce.
