@@ -8,11 +8,11 @@ Throughout these steps, `<service-name>` is the "Service name" you entered — t
 app shows the exact destination path above each output.
 
 1. Fill in the form with the desired values.
-2. Copy the generated service script.
+2. Copy the generated service script from the "Service script" tab.
 3. Save it as `/etc/init.d/<service-name>`.
-4. Run the commands from the "Shell commands to run" panel.
+4. Run the commands from the "Shell commands" tab.
 5. Start the service with `service <service-name> start`.
-6. Optionally save the "Logrotate" output to `/etc/logrotate.d/<service-name>`.
+6. Optionally save "Logrotate config" as `/etc/logrotate.d/<service-name>`.
 
 The service name and username accept only letters, digits, dot, dash and
 underscore, and may not start with a dot or dash, because both are interpolated

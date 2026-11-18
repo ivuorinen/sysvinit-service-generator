@@ -2,6 +2,8 @@
 // values between the inputs and the outputs. Validation and escaping live in
 // service-template.ts, the trust boundary, so no rule is re-implemented here.
 import './assets/main.css'
+// Imported for its side effect: it defines <tab-group>, which holds the outputs.
+import './tab-group'
 
 import { fieldValidity, generateLogRotate, generateService } from './service-template'
 

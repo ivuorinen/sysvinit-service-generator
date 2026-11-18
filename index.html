@@ -56,40 +56,51 @@
         <p id="summary" class="error" role="status"></p>
 
         <div id="output">
-          <h2 id="service-label">Generated service script:</h2>
-          <div id="service-path-note">Save as: <code id="service-path"></code></div>
-          <textarea
-            id="service-script"
-            class="tall"
-            readonly
-            aria-labelledby="service-label"
-            aria-describedby="service-path-note"
-          ></textarea>
-          <button id="copy-service" type="button">Copy service script</button>
+          <h2 id="outputs-label">Generated files</h2>
+          <!-- src/tab-group.ts adds the tab roles and keyboard support. -->
+          <tab-group>
+            <tab-list aria-labelledby="outputs-label">
+              <button id="tab-service" type="button">Service script</button>
+              <button id="tab-logrotate" type="button">Logrotate config</button>
+              <button id="tab-shell" type="button">Shell commands</button>
+            </tab-list>
 
-          <details>
-            <summary id="logrotate-label">Logrotate</summary>
-            <div id="logrotate-path-note">Save as: <code id="logrotate-path"></code></div>
-            <textarea
-              id="logrotate"
-              class="just-right noresize"
-              readonly
-              aria-labelledby="logrotate-label"
-              aria-describedby="logrotate-path-note"
-            ></textarea>
-            <button id="copy-logrotate" type="button">Copy logrotate config</button>
-          </details>
+            <tab-panel id="panel-service">
+              <div id="service-path-note">Save as: <code id="service-path"></code></div>
+              <textarea
+                id="service-script"
+                class="tall"
+                readonly
+                aria-labelledby="tab-service"
+                aria-describedby="service-path-note"
+              ></textarea>
+              <button id="copy-service" type="button">Copy service script</button>
+            </tab-panel>
 
-          <details>
-            <summary id="shell-label">Shell commands to run</summary>
-            <textarea
-              id="shell-commands"
-              class="just-right noresize"
-              readonly
-              aria-labelledby="shell-label"
-            ></textarea>
-            <button id="copy-shell" type="button">Copy shell commands</button>
-          </details>
+            <tab-panel id="panel-logrotate">
+              <div id="logrotate-path-note">Save as: <code id="logrotate-path"></code></div>
+              <textarea
+                id="logrotate"
+                class="just-right noresize"
+                readonly
+                aria-labelledby="tab-logrotate"
+                aria-describedby="logrotate-path-note"
+              ></textarea>
+              <button id="copy-logrotate" type="button">Copy logrotate config</button>
+            </tab-panel>
+
+            <tab-panel id="panel-shell">
+              <p id="shell-note">Run after saving the service script:</p>
+              <textarea
+                id="shell-commands"
+                class="just-right noresize"
+                readonly
+                aria-labelledby="tab-shell"
+                aria-describedby="shell-note"
+              ></textarea>
+              <button id="copy-shell" type="button">Copy shell commands</button>
+            </tab-panel>
+          </tab-group>
         </div>
       </main>
 

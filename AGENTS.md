@@ -4,9 +4,10 @@
 
 This repo hosts a small TypeScript web app built with Vite, with no runtime
 dependencies. `index.html` holds the markup, `src/main.ts` wires it to the
-generator, and static assets are under `public/`. Config files are
-`vite.config.ts` (build and Vitest), `tsconfig.json`, `eslint.config.mjs` and
-`.stylelintrc.json`.
+generator, and `src/tab-group.ts` defines the `<tab-group>` custom element that
+shows the three outputs as tabs. Static assets are under `public/`. Config files
+are `vite.config.ts` (build and Vitest), `tsconfig.json`, `eslint.config.mjs`
+and `.stylelintrc.json`.
 
 The app generates a sysvinit service script that users run as root. The
 generation logic lives in `src/service-template.ts`, deliberately free of the

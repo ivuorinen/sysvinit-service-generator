@@ -120,8 +120,60 @@ textarea {
   resize: none;
 }
 
-summary {
-  cursor: pointer;
+/* Tabs: src/tab-group.ts sets the roles, aria-selected and hidden. */
+tab-group {
+  display: block;
+}
+
+tab-panel {
+  display: block;
+  padding-top: 0.75rem;
+}
+
+/* `display: block` above would otherwise override the `hidden` attribute. */
+tab-group > [hidden] {
+  display: none;
+}
+
+/* Until <tab-group> is defined, lay out only its first panel: no stacked paint. */
+tab-group:not(:defined) > tab-panel:not(:first-of-type) {
+  display: none;
+}
+
+/* Wrap rather than scroll on narrow screens, so no tab is out of sight. */
+tab-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Undo the filled look of the global button rule. */
+tab-list button {
+  /* Keeps each tab above the 24×24 px minimum target size. The extra 3px at
+    the bottom stands in for the selected tab's underline, so all tabs are the
+    same height. A transparent border would do the same, but forced-colours
+    mode (Windows contrast themes) paints it, underlining every tab. */
+  padding: 0.5rem 1rem calc(0.5rem + 3px);
+  color: var(--color-text);
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+/* The underline shows the selected tab without relying on colour alone. */
+tab-list [aria-selected='true'] {
+  padding-bottom: 0.5rem;
+  color: var(--color-accent);
+  border-bottom: 3px solid var(--color-accent);
+}
+
+/* The accent clears the 3:1 focus-indicator contrast in both colour schemes. */
+tab-list button:focus-visible,
+tab-panel:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 footer {

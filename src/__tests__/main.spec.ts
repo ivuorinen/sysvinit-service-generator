@@ -30,9 +30,16 @@ const checked = ['service', 'username', 'command'] as const
 /**
  * Load the markup and a fresh copy of the UI module, as a page load does.
  * `resetModules` re-runs main.ts's top level, so no test sees another's state.
+ *
+ * The markup goes in through a template, parsed whole and then connected, as a
+ * browser does. happy-dom's `innerHTML` connects each element before parsing
+ * its children, and from the second test on `<tab-group>` is already defined,
+ * so it would wire itself up with no tabs.
  */
 const load = async (html = markup): Promise<void> => {
-  document.body.innerHTML = html
+  const template = document.createElement('template')
+  template.innerHTML = html
+  document.body.replaceChildren(template.content)
   vi.resetModules()
   await import('../main')
 }
@@ -104,6 +111,41 @@ describe('UI', () => {
     expect(get('shell-commands', HTMLTextAreaElement).value).toBe(
       'sudo chmod +x /etc/init.d/web && sudo update-rc.d web defaults'
     )
+  })
+
+  it('groups the outputs in tabs, the service script first', async () => {
+    await load()
+    const tabs = Array.from(document.querySelectorAll('tab-group > tab-list > button'))
+    expect(tabs.map((tab) => tab.textContent.trim())).toEqual([
+      'Service script',
+      'Logrotate config',
+      'Shell commands'
+    ])
+    const labelId = document.querySelector('tab-list')?.getAttribute('aria-labelledby') ?? ''
+    expect(document.getElementById(labelId)?.textContent).toBe('Generated files')
+    expect(get('tab-service', HTMLButtonElement).getAttribute('aria-selected')).toBe('true')
+    expect(
+      ['panel-service', 'panel-logrotate', 'panel-shell'].map((id) => get(id, HTMLElement).hidden)
+    ).toEqual([false, true, true])
+    // Each textarea is named by its tab, so a screen reader announces which
+    // file it holds.
+    for (const id of ['service-script', 'logrotate', 'shell-commands']) {
+      const labelledBy = get(id, HTMLTextAreaElement).getAttribute('aria-labelledby') ?? ''
+      expect(document.getElementById(labelledBy)?.getAttribute('role'), id).toBe('tab')
+    }
+    expect(get('panel-shell', HTMLElement).textContent).toContain(
+      'Run after saving the service script:'
+    )
+  })
+
+  it('keeps the selected tab while a field is invalid', async () => {
+    await load()
+    get('tab-logrotate', HTMLButtonElement).click()
+    type('service', 'my app')
+    type('service', 'my-service')
+    expect(get('tab-logrotate', HTMLButtonElement).getAttribute('aria-selected')).toBe('true')
+    expect(get('panel-logrotate', HTMLElement).hidden).toBe(false)
+    expect(get('output', HTMLElement).hidden).toBe(false)
   })
 
   it.each([
