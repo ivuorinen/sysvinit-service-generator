@@ -30,6 +30,12 @@ const mount = (html = fixture): void => {
 
 const tabs = (): HTMLButtonElement[] =>
   Array.from(document.querySelectorAll<HTMLButtonElement>('tab-list > button'))
+/** The tab at `index`; fails the test when there is none. */
+const tab = (index: number): HTMLButtonElement => {
+  const element = tabs()[index]
+  if (!element) throw new Error(`no tab at index ${index}`)
+  return element
+}
 const panels = (): HTMLElement[] => Array.from(document.querySelectorAll<HTMLElement>('tab-panel'))
 const selected = (): number =>
   tabs().findIndex((tab) => tab.getAttribute('aria-selected') === 'true')
@@ -93,12 +99,12 @@ describe('<tab-group>', () => {
 
   it('selects and focuses a clicked tab, including a click on its content', () => {
     mount()
-    tabs()[1].querySelector('span')?.click()
+    tab(1).querySelector('span')?.click()
     expect(selected()).toBe(1)
-    expect(document.activeElement).toBe(tabs()[1])
+    expect(document.activeElement).toBe(tab(1))
     expect(panels().map((panel) => panel.hidden)).toEqual([true, false, true])
 
-    tabs()[2].click()
+    tab(2).click()
     expect(selected()).toBe(2)
   })
 
@@ -111,19 +117,19 @@ describe('<tab-group>', () => {
     ['End', 0, 2]
   ])('%s from tab %i selects tab %i', (name, start, expected) => {
     mount()
-    tabs()[start].click()
-    const event = key(tabs()[start], name)
+    tab(start).click()
+    const event = key(tab(start), name)
     expect(selected()).toBe(expected)
-    expect(document.activeElement).toBe(tabs()[expected])
+    expect(document.activeElement).toBe(tab(expected))
     // Unprevented, Home and End would also scroll the page.
     expect(event.defaultPrevented).toBe(true)
   })
 
   it.each([
-    ['Tab, which moves focus into the panel', 'Tab', {}, () => tabs()[0]],
-    ['Alt+ArrowLeft, the browser back shortcut', 'ArrowLeft', { altKey: true }, () => tabs()[0]],
-    ['Ctrl+Home', 'Home', { ctrlKey: true }, () => tabs()[0]],
-    ['Meta+End', 'End', { metaKey: true }, () => tabs()[0]],
+    ['Tab, which moves focus into the panel', 'Tab', {}, () => tab(0)],
+    ['Alt+ArrowLeft, the browser back shortcut', 'ArrowLeft', { altKey: true }, () => tab(0)],
+    ['Ctrl+Home', 'Home', { ctrlKey: true }, () => tab(0)],
+    ['Meta+End', 'End', { metaKey: true }, () => tab(0)],
     [
       'an arrow key in a panel textarea',
       'ArrowRight',
@@ -161,6 +167,11 @@ describe('<tab-group>', () => {
       'fewer panels than tabs',
       fixture.replace('<tab-panel id="p3">Third</tab-panel>', ''),
       '<tab-group> has 3 tabs but 2 panels'
+    ],
+    [
+      'more panels than tabs',
+      fixture.replace('</tab-group>', '<tab-panel id="p4">Fourth</tab-panel></tab-group>'),
+      '<tab-group> has 3 tabs but 4 panels'
     ],
     [
       'a tab without an id',

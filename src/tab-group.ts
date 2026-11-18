@@ -23,8 +23,8 @@
 // element before the parser reaches its children would not meet that.
 
 export class TabGroup extends HTMLElement {
-  private tabs: HTMLButtonElement[] = []
-  private panels: HTMLElement[] = []
+  /** Each tab with the panel it controls, in document order. */
+  private pairs: { tab: HTMLButtonElement; panel: HTMLElement }[] = []
 
   constructor() {
     super()
@@ -50,23 +50,32 @@ export class TabGroup extends HTMLElement {
     const list = this.querySelector(':scope > tab-list')
     const tabs = list ? Array.from(list.querySelectorAll<HTMLButtonElement>(':scope > button')) : []
     const panels = Array.from(this.querySelectorAll<HTMLElement>(':scope > tab-panel'))
-    if (!list || tabs.length === 0) {
+    // Destructured rather than tabs[0]: `!first` is the "no tabs" check and
+    // also tells the compiler that `first` exists past it.
+    const [first] = tabs
+    if (!list || !first) {
       throw new Error('<tab-group> needs a <tab-list> with at least one <button>')
     }
-    if (panels.length !== tabs.length) {
-      throw new Error(`<tab-group> has ${tabs.length} tabs but ${panels.length} panels`)
-    }
+    // Pair the nth tab with the nth panel, running to the longer list. A tab or
+    // panel left without a partner is a count mismatch, so checking the counts
+    // and pairing are one step, and every pair is known to have both.
+    const pairs = Array.from({ length: Math.max(tabs.length, panels.length) }, (_, index) => {
+      const tab = tabs[index]
+      const panel = panels[index]
+      if (!tab || !panel) {
+        throw new Error(`<tab-group> has ${tabs.length} tabs but ${panels.length} panels`)
+      }
+      return { tab, panel }
+    })
     // The ids are authored, not generated: index.html labels each textarea by
     // its tab's id.
     if (![...tabs, ...panels].every((element) => element.id)) {
       throw new Error('<tab-group> needs an id on every tab and panel')
     }
 
-    this.tabs = tabs
-    this.panels = panels
+    this.pairs = pairs
     list.setAttribute('role', 'tablist')
-    tabs.forEach((tab, index) => {
-      const panel = panels[index]
+    for (const { tab, panel } of pairs) {
       tab.setAttribute('role', 'tab')
       tab.setAttribute('aria-controls', panel.id)
       panel.setAttribute('role', 'tabpanel')
@@ -74,58 +83,59 @@ export class TabGroup extends HTMLElement {
       // Each panel opens with plain text, not a focusable control, so the
       // pattern makes the panel itself the next Tab stop after the tab list.
       panel.tabIndex = 0
-    })
+    }
     // A moved group is connected again, so it returns to its first tab. This
     // page never moves it.
-    this.select(0)
+    this.select(first)
   }
 
   /**
-   * Show panel `index` and mark its tab selected.
+   * Show the panel of tab `selected` and mark that tab selected.
    *
    * Only the selected tab is in the Tab order (a roving tabindex); the others
    * are reached with the arrow keys. Focus is left alone, so selecting on
    * connect does not pull focus to the page's tabs.
    */
-  private select(index: number): void {
-    this.tabs.forEach((tab, i) => {
-      const isSelected = i === index
+  private select(selected: HTMLButtonElement): void {
+    for (const { tab, panel } of this.pairs) {
+      const isSelected = tab === selected
       tab.setAttribute('aria-selected', String(isSelected))
       tab.tabIndex = isSelected ? 0 : -1
-      this.panels[i].hidden = !isSelected
-    })
+      panel.hidden = !isSelected
+    }
   }
 
-  /** Select and focus `index`, as a click or key press does. */
-  private activate(index: number): void {
-    this.select(index)
-    this.tabs[index].focus()
+  /** Select and focus `tab`, as a click or key press does. */
+  private activate(tab: HTMLButtonElement): void {
+    this.select(tab)
+    tab.focus()
   }
 
   private onClick(event: MouseEvent): void {
     // contains(), not `target === tab`: the click can land on markup inside
     // the button's label.
-    const index = this.tabs.findIndex((tab) => tab.contains(event.target as Node))
-    if (index >= 0) this.activate(index)
+    const pair = this.pairs.find(({ tab }) => tab.contains(event.target as Node))
+    if (pair) this.activate(pair.tab)
   }
 
   private onKeydown(event: KeyboardEvent): void {
     // Keys pressed inside a panel (Home in a textarea) bubble up to here too;
     // only a focused tab is ours to handle. Modified keys are browser and
     // assistive-technology shortcuts, such as Alt+Left for back.
-    const index = this.tabs.findIndex((tab) => tab === event.target)
+    const tabs = this.pairs.map(({ tab }) => tab)
+    const index = tabs.findIndex((tab) => tab === event.target)
     if (index < 0 || event.altKey || event.ctrlKey || event.metaKey) return
 
-    const count = this.tabs.length
-    // Partial: a key with no move looks up `undefined`, and the type says so.
-    const moves: Partial<Record<string, number>> = {
-      ArrowLeft: (index - 1 + count) % count,
-      ArrowRight: (index + 1) % count,
-      Home: 0,
-      End: count - 1
+    // at() counts a negative index from the end, so Left from the first tab
+    // wraps to the last. at() and a key with no move both read as undefined.
+    const moves: Record<string, HTMLButtonElement | undefined> = {
+      ArrowLeft: tabs.at(index - 1),
+      ArrowRight: tabs.at((index + 1) % tabs.length),
+      Home: tabs.at(0),
+      End: tabs.at(-1)
     }
     const next = moves[event.key]
-    if (next === undefined) return
+    if (!next) return
     // Home and End would otherwise also scroll the page.
     event.preventDefault()
     this.activate(next)
